@@ -1,50 +1,134 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import OverviewPage from './pages/OverviewPage'
+import type { LucideIcon } from 'lucide-react'
+import { AlertTriangle, BellRing, FileText, Globe, Mail, ScrollText, Container, Cpu, Database, Server, Ship } from 'lucide-react'
+import { AppShell } from './components/layout/AppShell'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { ComingSoon } from './components/ComingSoon'
+import { LoginPage } from './pages/auth/LoginPage'
+import { RegisterPage } from './pages/auth/RegisterPage'
+import { DashboardPage } from './pages/DashboardPage'
+import { UsersPage } from './pages/users/UsersPage'
+import { OrganizationSettingsPage } from './pages/settings/OrganizationSettingsPage'
+import { SystemSettingsPage } from './pages/settings/SystemSettingsPage'
+
+interface ComingSoonRoute {
+  path: string
+  title: string
+  description: string
+  milestone: number
+  icon: LucideIcon
+}
+
+const comingSoonRoutes: ComingSoonRoute[] = [
+  {
+    path: '/applications',
+    title: 'Application Monitoring',
+    description: 'Register services, run HTTP checks and track uptime, response times and status transitions.',
+    milestone: 3,
+    icon: Globe,
+  },
+  {
+    path: '/servers',
+    title: 'Server Monitoring',
+    description: 'CPU, RAM, disk and network metrics streamed by lightweight OpsPulse agents.',
+    milestone: 6,
+    icon: Server,
+  },
+  {
+    path: '/databases',
+    title: 'Database Monitoring',
+    description: 'PostgreSQL and SQL Server availability, connections, size and query statistics.',
+    milestone: 7,
+    icon: Database,
+  },
+  {
+    path: '/kubernetes',
+    title: 'Kubernetes Monitoring',
+    description: 'Cluster health, nodes, pods, deployments and restart counts via least-privilege API access.',
+    milestone: 10,
+    icon: Ship,
+  },
+  {
+    path: '/docker',
+    title: 'Docker Monitoring',
+    description: 'Container status, uptime, CPU, memory and restart counts across hosts.',
+    milestone: 11,
+    icon: Container,
+  },
+  {
+    path: '/agents',
+    title: 'Monitoring Agents',
+    description: 'Deploy and manage the secure agents that collect server and database metrics.',
+    milestone: 6,
+    icon: Cpu,
+  },
+  {
+    path: '/incidents',
+    title: 'Incident Management',
+    description: 'Automatic incident creation, acknowledgement, assignment, comments and resolution.',
+    milestone: 8,
+    icon: AlertTriangle,
+  },
+  {
+    path: '/alert-rules',
+    title: 'Alert Rules',
+    description: 'Thresholds, evaluation windows, cooldowns and notification channels for every metric.',
+    milestone: 9,
+    icon: BellRing,
+  },
+  {
+    path: '/notifications',
+    title: 'Notifications',
+    description: 'In-app and email delivery with preferences, history and retry handling.',
+    milestone: 9,
+    icon: Mail,
+  },
+  {
+    path: '/reports',
+    title: 'Reports & Analytics',
+    description: 'Uptime summaries, utilization trends and CSV exports across your infrastructure.',
+    milestone: 9,
+    icon: FileText,
+  },
+  {
+    path: '/audit-logs',
+    title: 'Audit Logs',
+    description: 'Who changed what and when — logins, configuration changes and role updates.',
+    milestone: 12,
+    icon: ScrollText,
+  },
+]
 
 function App() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b border-navy-700 bg-navy-900">
-        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-info/15 text-info">
-              <svg
-                className="h-4.5 w-4.5"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />
-              </svg>
-            </span>
-            <div className="leading-tight">
-              <p className="text-sm font-semibold text-white">OpsPulse</p>
-              <p className="text-[11px] text-slate-500">Infrastructure Monitoring</p>
-            </div>
-          </div>
-          <span className="rounded-full border border-navy-600 bg-navy-800 px-2.5 py-1 text-[11px] font-medium text-slate-400">
-            Milestone 1 — Foundation
-          </span>
-        </div>
-      </header>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
-        <Routes>
-          <Route path="/" element={<OverviewPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AppShell />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/settings/organization" element={<OrganizationSettingsPage />} />
+          <Route path="/settings/system" element={<SystemSettingsPage />} />
+          {comingSoonRoutes.map((route) => (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={
+                <ComingSoon
+                  title={route.title}
+                  description={route.description}
+                  milestone={route.milestone}
+                  icon={route.icon}
+                />
+              }
+            />
+          ))}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-
-      <footer className="border-t border-navy-700 bg-navy-900">
-        <div className="mx-auto w-full max-w-6xl px-6 py-3 text-[11px] text-slate-600">
-          OpsPulse — ASP.NET Core 10 · React 19 · PostgreSQL · Redis
-        </div>
-      </footer>
-    </div>
+        </Route>
+      </Route>
+    </Routes>
   )
 }
 

@@ -6,16 +6,15 @@ OpsPulse is a centralized monitoring platform for backend applications and APIs,
 health, PostgreSQL and SQL Server databases, Kubernetes clusters, Docker containers,
 incidents and alerting — built as a professional-grade, production-oriented product.
 
-![Status](https://img.shields.io/badge/milestone-1%20of%2012%20complete-3b82f6)
+![Status](https://img.shields.io/badge/milestone-2%20of%2012%20complete-3b82f6)
 
 ## Technology Stack
 
 | Layer | Technologies |
 |---|---|
-| Backend | ASP.NET Core Web API 10, C#, Clean Architecture, EF Core 10, PostgreSQL |
-| Identity & Realtime | ASP.NET Core Identity, JWT, SignalR *(Milestone 2+)* |
-| Infrastructure services | Redis, Serilog, background/hosted services |
-| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4, React Router 7, TanStack Query 5, Zustand |
+| Backend | ASP.NET Core Web API 10, C#, Clean Architecture, EF Core 10, PostgreSQL, ASP.NET Core Identity, JWT |
+| Realtime & Cache | Redis, Serilog, background/hosted services, SignalR *(Milestone 5+)* |
+| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4, React Router 7, TanStack Query 5, Zustand, Lucide |
 | DevOps | Docker, Docker Compose, Kubernetes *(later)*, GitHub Actions *(later)*, Nginx *(later)* |
 
 ## Architecture
@@ -99,8 +98,22 @@ npm run dev
 |---|---|
 | `GET /health` | JSON health report incl. PostgreSQL and Redis check latency |
 | `GET /api/v1/health` | API metadata (service, version, environment) |
+| `GET /api/v1/auth/me` | Authenticated user profile (JWT) |
+| `GET /api/v1/users` | Tenant-scoped user list (paged, filterable) |
 | `GET /openapi/v1.json` | OpenAPI document |
 | `GET /scalar` | Interactive API reference UI (development) |
+
+## Authentication & Roles
+
+- **Register** (`/register` page) creates an organization and its administrator.
+- A **SuperAdmin** (`admin@opspulse.dev` / `Admin#12345` in development — configure
+  via `Seed:SuperAdmin` in production) oversees all organizations.
+- Access tokens expire after 15 minutes and are refreshed automatically by the
+  frontend; refresh tokens are stored hashed, rotated on every use, and reuse of a
+  rotated token revokes the whole chain.
+- Roles: `SuperAdmin`, `OrganizationAdmin`, `DevOpsEngineer`, `Operator`, `Viewer` —
+  enforced server-side via authorization policies; the UI never gates security.
+- Authentication endpoints are rate-limited (20 req/min per client IP).
 
 ## Development Commands
 

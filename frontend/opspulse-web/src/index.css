@@ -30,3 +30,22 @@ body,
 body {
   @apply bg-navy-950 text-slate-200 antialiased;
 }
+
+::selection {
+  background: rgb(59 130 246 / 0.35);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #1f2a47;
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
