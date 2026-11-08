@@ -38,12 +38,47 @@ public sealed record KubernetesPodDto(
     DateTime? StartedAtUtc,
     DateTime? SyncedAtUtc);
 
+public sealed record KubernetesDeploymentDto(
+    Guid Id,
+    string Namespace,
+    string Name,
+    int ReplicasDesired,
+    int ReplicasReady,
+    string? Image,
+    DateTime? SyncedAtUtc);
+
 public sealed record KubernetesClusterDetailsDto(
     KubernetesClusterDto Cluster,
     IReadOnlyList<KubernetesNodeDto> Nodes,
-    IReadOnlyList<KubernetesPodDto> Pods);
+    IReadOnlyList<KubernetesPodDto> Pods,
+    IReadOnlyList<KubernetesDeploymentDto> Deployments);
+
+public sealed record PodLogsDto(
+    string Namespace,
+    string Pod,
+    int Lines,
+    bool Previous,
+    string Logs);
 
 public sealed record CreateKubernetesClusterRequest(string Name, string? KubeConfigYaml);
+
+public sealed record ScaleDeploymentRequest(int Replicas);
+
+public sealed record PlatformLogDto(
+    Guid Id,
+    DateTime TimestampUtc,
+    string Level,
+    string Message,
+    string? Exception,
+    string? Source,
+    string Process);
+
+public sealed record PlatformLogQuery(
+    int Page = 1,
+    int PageSize = 100,
+    string? Search = null,
+    string? Level = null,
+    string? Source = null);
 
 public sealed record DockerHostDto(
     Guid Id,

@@ -1,4 +1,5 @@
 using k8s;
+using k8s.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OpsPulse.Application.Common;
@@ -8,9 +9,10 @@ using OpsPulse.Infrastructure.Persistence;
 namespace OpsPulse.Infrastructure.Monitoring;
 
 /// <summary>
-/// Synchronizes cluster state (version, nodes, pods) from the Kubernetes API.
-/// Uses an encrypted stored kubeconfig when present, otherwise the local
-/// default kubeconfig — least privilege is the operator's responsibility via RBAC.
+/// Synchronizes cluster state (nodes, pods, deployments) from the Kubernetes
+/// API and performs control operations (pod logs, pod restart, deployment
+/// scaling). Uses an encrypted stored kubeconfig when present, otherwise the
+/// local default kubeconfig — least privilege is the operator's RBAC job.
 /// </summary>
 public sealed class KubernetesSyncEngine(
     OpsPulseDbContext db,
@@ -26,6 +28,7 @@ public sealed class KubernetesSyncEngine(
 
             var nodes = await client.ListNodeAsync(cancellationToken: cancellationToken);
             var pods = await client.ListPodForAllNamespacesAsync(cancellationToken: cancellationToken);
+            var deployments = await client.ListDeploymentForAllNamespacesAsync(cancellationToken: cancellationToken);
 
             var now = DateTime.UtcNow;
             cluster.ApiEndpoint ??= config.Host;
@@ -41,8 +44,24 @@ public sealed class KubernetesSyncEngine(
 
             var existingNodes = await db.KubernetesNodes.Where(n => n.ClusterId == cluster.Id).ToListAsync(cancellationToken);
             var existingPods = await db.KubernetesPods.Where(p => p.ClusterId == cluster.Id).ToListAsync(cancellationToken);
+            var existingDeployments = await db.KubernetesDeployments.Where(d => d.ClusterId == cluster.Id).ToListAsync(cancellationToken);
             db.KubernetesNodes.RemoveRange(existingNodes);
             db.KubernetesPods.RemoveRange(existingPods);
+            db.KubernetesDeployments.RemoveRange(existingDeployments);
+
+            foreach (var deployment in deployments.Items)
+            {
+                db.KubernetesDeployments.Add(new KubernetesDeployment
+                {
+                    ClusterId = cluster.Id,
+                    Namespace = deployment.Metadata?.NamespaceProperty ?? "default",
+                    Name = deployment.Metadata?.Name ?? "unknown",
+                    ReplicasDesired = (int)(deployment.Spec?.Replicas ?? 0),
+                    ReplicasReady = (int)(deployment.Status?.ReadyReplicas ?? 0),
+                    Image = deployment.Spec?.Template?.Spec?.Containers?.FirstOrDefault()?.Image,
+                    SyncedAtUtc = now
+                });
+            }
 
             foreach (var node in nodes.Items)
             {
@@ -123,6 +142,81 @@ public sealed class KubernetesSyncEngine(
         {
             File.Delete(tempFile);
         }
+    }
+
+    /// <summary>Reads the last <paramref name="tailLines"/> lines of a pod's log output.</summary>
+    public async Task<string> GetPodLogsAsync(
+        KubernetesCluster cluster,
+        string namespaceParameter,
+        string podName,
+        int tailLines,
+        bool previous,
+        CancellationToken cancellationToken = default)
+    {
+        var config = await BuildConfigurationAsync(cluster, cancellationToken);
+        using var client = new k8s.Kubernetes(config);
+
+        await using var logStream = await client.ReadNamespacedPodLogAsync(
+            podName,
+            namespaceParameter,
+            container: null,
+            follow: false,
+            insecureSkipTLSVerifyBackend: null,
+            limitBytes: null,
+            pretty: null,
+            previous: previous,
+            sinceSeconds: null,
+            tailLines: Math.Clamp(tailLines, 1, 5000),
+            timestamps: false,
+            cancellationToken: cancellationToken);
+
+        using var reader = new StreamReader(logStream);
+        return await reader.ReadToEndAsync(cancellationToken);
+    }
+
+    /// <summary>Restarts a pod by deleting it; its controller recreates it.</summary>
+    public async Task RestartPodAsync(
+        KubernetesCluster cluster,
+        string namespaceParameter,
+        string podName,
+        CancellationToken cancellationToken = default)
+    {
+        var config = await BuildConfigurationAsync(cluster, cancellationToken);
+        using var client = new k8s.Kubernetes(config);
+
+        await client.DeleteNamespacedPodAsync(
+            podName,
+            namespaceParameter,
+            new V1DeleteOptions(),
+            cancellationToken: cancellationToken);
+
+        logger.LogInformation("Kubernetes pod {Namespace}/{Pod} on {Cluster} deleted for restart",
+            namespaceParameter, podName, cluster.Name);
+    }
+
+    /// <summary>Scales a deployment to the requested replica count.</summary>
+    public async Task<(int Desired, int Ready)> ScaleDeploymentAsync(
+        KubernetesCluster cluster,
+        string namespaceParameter,
+        string deploymentName,
+        int replicas,
+        CancellationToken cancellationToken = default)
+    {
+        var config = await BuildConfigurationAsync(cluster, cancellationToken);
+        using var client = new k8s.Kubernetes(config);
+
+        var scale = await client.ReadNamespacedDeploymentScaleAsync(deploymentName, namespaceParameter, cancellationToken: cancellationToken);
+        scale.Spec.Replicas = Math.Clamp(replicas, 0, 100);
+        await client.PatchNamespacedDeploymentScaleAsync(
+            new V1Patch(scale, V1Patch.PatchType.MergePatch),
+            deploymentName,
+            namespaceParameter,
+            cancellationToken: cancellationToken);
+
+        logger.LogInformation("Kubernetes deployment {Namespace}/{Deployment} on {Cluster} scaled to {Replicas}",
+            namespaceParameter, deploymentName, cluster.Name, replicas);
+
+        return (scale.Spec.Replicas ?? 0, 0);
     }
 
     private static long ParseCpuCores(string? quantity)

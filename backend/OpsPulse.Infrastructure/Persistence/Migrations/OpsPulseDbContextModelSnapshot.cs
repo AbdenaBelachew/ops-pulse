@@ -942,6 +942,64 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                     b.ToTable("kubernetes_clusters", (string)null);
                 });
 
+            modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesDeployment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ClusterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cluster_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Image")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("image");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Namespace")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("namespace");
+
+                    b.Property<int>("ReplicasDesired")
+                        .HasColumnType("integer")
+                        .HasColumnName("replicas_desired");
+
+                    b.Property<int>("ReplicasReady")
+                        .HasColumnType("integer")
+                        .HasColumnName("replicas_ready");
+
+                    b.Property<DateTime?>("SyncedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("synced_at_utc");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kubernetes_deployments");
+
+                    b.HasIndex("ClusterId", "Namespace", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kubernetes_deployments_cluster_id_namespace_name");
+
+                    b.ToTable("kubernetes_deployments", (string)null);
+                });
+
             modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesNode", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1074,6 +1132,65 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_kubernetes_pods_cluster_id_namespace_name");
 
                     b.ToTable("kubernetes_pods", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Logging.SystemLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Exception")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)")
+                        .HasColumnName("exception");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("level");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("message");
+
+                    b.Property<string>("Process")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("process");
+
+                    b.Property<string>("Source")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("source");
+
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("timestamp_utc");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_system_logs");
+
+                    b.HasIndex("Level")
+                        .HasDatabaseName("ix_system_logs_level");
+
+                    b.HasIndex("TimestampUtc", "Level")
+                        .HasDatabaseName("ix_system_logs_timestamp_utc_level");
+
+                    b.ToTable("system_logs", (string)null);
                 });
 
             modelBuilder.Entity("OpsPulse.Domain.Notifications.Notification", b =>
@@ -1855,6 +1972,18 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_kubernetes_clusters_organizations_organization_id");
 
                     b.Navigation("Organizations");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesDeployment", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Kubernetes.KubernetesCluster", "Cluster")
+                        .WithMany()
+                        .HasForeignKey("ClusterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_kubernetes_deployments_kubernetes_clusters_cluster_id");
+
+                    b.Navigation("Cluster");
                 });
 
             modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesNode", b =>

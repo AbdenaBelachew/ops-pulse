@@ -14,6 +14,7 @@ import {
   Server,
   Settings,
   Ship,
+  Terminal,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -64,6 +65,7 @@ const sections: NavSection[] = [
     heading: 'Administration',
     items: [
       { to: '/audit-logs', label: 'Audit Logs', icon: ScrollText, milestone: 0 },
+      { to: '/logs', label: 'System Logs', icon: Terminal, milestone: 0 },
       { to: '/users', label: 'Users', icon: Users, milestone: 2 },
       { to: '/settings/organization', label: 'Organization', icon: Building2, milestone: 2 },
       { to: '/settings/system', label: 'System Settings', icon: Settings, milestone: 2 },

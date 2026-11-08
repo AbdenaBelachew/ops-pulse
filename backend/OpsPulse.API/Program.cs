@@ -24,11 +24,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog((context, loggerConfiguration) => loggerConfiguration
     .ReadFrom.Configuration(context.Configuration)
-    .Enrich.FromLogContext());
+    .Enrich.FromLogContext()
+    .WriteTo.Sink(OpsPulse.Infrastructure.Logging.PostgresLogSink.Instance));
 
 // Application + Infrastructure composition.
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Persists log events captured by the Serilog sink into PostgreSQL.
+builder.Services.AddHostedService<OpsPulse.Infrastructure.Logging.LogPersistenceService>();
 
 // Presentation: controllers with string enum values in JSON.
 builder.Services.AddControllers()

@@ -20,6 +20,7 @@ import { AlertRulesPage } from './pages/operations/AlertRulesPage'
 import { NotificationsPage } from './pages/operations/NotificationsPage'
 import { ReportsPage } from './pages/operations/ReportsPage'
 import { AuditLogsPage } from './pages/operations/AuditLogsPage'
+import { LogsPage } from './pages/operations/LogsPage'
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/audit-logs" element={<AuditLogsPage />} />
+          <Route path="/logs" element={<LogsPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/settings/organization" element={<OrganizationSettingsPage />} />
           <Route path="/settings/system" element={<SystemSettingsPage />} />

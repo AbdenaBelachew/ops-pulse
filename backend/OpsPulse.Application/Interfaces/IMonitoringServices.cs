@@ -47,6 +47,14 @@ public interface IKubernetesService
     Task<KubernetesClusterDto> CreateAsync(CreateKubernetesClusterRequest request, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     Task<KubernetesClusterDto> SyncAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<PodLogsDto> GetPodLogsAsync(Guid id, string namespaceParameter, string podName, int lines, bool previous, CancellationToken cancellationToken = default);
+    Task RestartPodAsync(Guid id, string namespaceParameter, string podName, CancellationToken cancellationToken = default);
+    Task<KubernetesDeploymentDto> ScaleDeploymentAsync(Guid id, string namespaceParameter, string deploymentName, ScaleDeploymentRequest request, CancellationToken cancellationToken = default);
+}
+
+public interface ILogService
+{
+    Task<PagedResult<PlatformLogDto>> ListAsync(PlatformLogQuery query, CancellationToken cancellationToken = default);
 }
 
 public interface IDockerService

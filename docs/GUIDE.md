@@ -150,8 +150,18 @@ container table with CPU% and memory.
    (leave empty to use `~/.kube/config`, or paste a least-privilege kubeconfig).
 2. If the cluster is unreachable it is marked so with the error — nothing breaks.
 
-✅ **Verify:** cluster card shows nodes/pods/failed-pods counts; the nodes and
-pods tables populate after sync.
+**Kubernetes control operations** (need `pods delete`, `deployments/scale`
+RBAC verbs in the kubeconfig):
+- **Pod logs** — file icon on any pod row opens a log viewer with 100-1000
+  line selection, previous-container toggle and 5s auto-refresh.
+- **Restart pod** — rotate icon deletes the pod; its controller recreates it.
+- **Scale deployment** — pencil icon on a deployment row sets the replica
+  count (0 suspends the workload). Every restart/scale is written to the
+  Audit Log.
+
+✅ **Verify:** cluster card shows nodes/pods/failed-pods counts; the nodes,
+deployments and pods tables populate after sync; pod logs match
+`kubectl logs` output; scaling a deployment changes its replica badge.
 
 ## Phase 9 — Alerts, incidents, notifications
 
@@ -175,16 +185,21 @@ pods tables populate after sync.
 Webhook (POSTs incident JSON to any URL). Delivery status is tracked per
 notification.
 
-## Phase 10 — Reports & audit
+## Phase 10 — Reports, logs & audit
 
 - **Reports:** uptime % per service (24h/7d/30d), incident summary with avg
   resolution time, server utilization averages/peaks, **CSV export** button.
+- **System Logs:** every log line from the API and Worker is persisted by the
+  Serilog→PostgreSQL pipeline. The page supports level filters, source filters,
+  full-text search, expandable exceptions and a **Live tail** mode (auto-refresh
+  every 3s). Logs are cleaned by the retention policy (default 30 days).
 - **Audit Logs:** every login, monitoring change, user change and incident
   action with actor, IP and timestamp. Filter and page through.
 - **System Settings:** runtime version, environment, live dependency health.
 
 ✅ **Verify:** Reports shows uptime numbers matching your service history;
-Audit Logs contains the actions you just performed.
+System Logs fills with new entries while Live tail is on; Audit Logs contains
+the actions you just performed.
 
 ## Phase 11 — Real-time (SignalR) verification
 

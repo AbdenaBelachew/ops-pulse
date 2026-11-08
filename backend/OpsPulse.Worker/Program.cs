@@ -3,13 +3,17 @@ using OpsPulse.Application;
 using OpsPulse.Infrastructure;
 using OpsPulse.Worker.Services;
 using Serilog;
-
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddSerilog(options => options
     .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
     .Enrich.FromLogContext()
-    .WriteTo.Console());
+    .WriteTo.Console()
+    .WriteTo.Sink(OpsPulse.Infrastructure.Logging.PostgresLogSink.Instance));
+
+builder.Services.AddHostedService<OpsPulse.Infrastructure.Logging.LogPersistenceService>();
 
 // Shares the full Infrastructure stack: DbContext, engines, alerting, notifier
 // (SignalR events flow through the Redis backplane to API-connected clients).

@@ -97,6 +97,7 @@ public static class DependencyInjection
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddScoped<IAgentIngestService, AgentIngestService>();
+        services.AddScoped<ILogService, LogService>();
 
         return services;
     }

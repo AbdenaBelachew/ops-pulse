@@ -15,7 +15,8 @@ public sealed class KubernetesService(
     ICurrentUser currentUser,
     IValidator<CreateKubernetesClusterRequest> createValidator,
     ICredentialProtector credentialProtector,
-    KubernetesSyncEngine syncEngine) : IKubernetesService
+    KubernetesSyncEngine syncEngine,
+    IAuditLogger auditLogger) : IKubernetesService
 {
     public async Task<IReadOnlyList<KubernetesClusterDto>> ListAsync(CancellationToken cancellationToken = default)
     {
@@ -40,7 +41,13 @@ public sealed class KubernetesService(
             .Select(p => new KubernetesPodDto(p.Id, p.Namespace, p.Name, p.Status, p.RestartCount, p.NodeName, p.IsFailed, p.StartedAtUtc, p.SyncedAtUtc))
             .ToListAsync(cancellationToken);
 
-        return new KubernetesClusterDetailsDto(Project(cluster), nodes, pods);
+        var deployments = await db.KubernetesDeployments.AsNoTracking()
+            .Where(d => d.ClusterId == id)
+            .OrderBy(d => d.Namespace).ThenBy(d => d.Name)
+            .Select(d => new KubernetesDeploymentDto(d.Id, d.Namespace, d.Name, d.ReplicasDesired, d.ReplicasReady, d.Image, d.SyncedAtUtc))
+            .ToListAsync(cancellationToken);
+
+        return new KubernetesClusterDetailsDto(Project(cluster), nodes, pods, deployments);
     }
 
     public async Task<KubernetesClusterDto> CreateAsync(CreateKubernetesClusterRequest request, CancellationToken cancellationToken = default)
@@ -87,6 +94,48 @@ public sealed class KubernetesService(
 
         await syncEngine.SyncAsync(cluster, cancellationToken);
         return Project(cluster);
+    }
+
+    public async Task<PodLogsDto> GetPodLogsAsync(
+        Guid id, string namespaceParameter, string podName, int lines, bool previous, CancellationToken cancellationToken = default)
+    {
+        var cluster = await Scoped().AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
+            ?? throw new NotFoundException("Cluster not found.");
+
+        var logs = await syncEngine.GetPodLogsAsync(cluster, namespaceParameter, podName, lines, previous, cancellationToken);
+        return new PodLogsDto(namespaceParameter, podName, lines, previous, logs);
+    }
+
+    public async Task RestartPodAsync(
+        Guid id, string namespaceParameter, string podName, CancellationToken cancellationToken = default)
+    {
+        var cluster = await Scoped().FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
+            ?? throw new NotFoundException("Cluster not found.");
+
+        await syncEngine.RestartPodAsync(cluster, namespaceParameter, podName, cancellationToken);
+        await auditLogger.LogAsync(new AuditEntry(
+            "kubernetes.pod.restarted", cluster.OrganizationId, currentUser.UserId, currentUser.Email,
+            "KubernetesPod", $"{namespaceParameter}/{podName}", cluster.Name), cancellationToken);
+    }
+
+    public async Task<KubernetesDeploymentDto> ScaleDeploymentAsync(
+        Guid id, string namespaceParameter, string deploymentName, ScaleDeploymentRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.Replicas is < 0 or > 100)
+        {
+            throw new ValidationException("Replicas must be between 0 and 100.");
+        }
+
+        var cluster = await Scoped().FirstOrDefaultAsync(c => c.Id == id, cancellationToken)
+            ?? throw new NotFoundException("Cluster not found.");
+
+        var (desired, ready) = await syncEngine.ScaleDeploymentAsync(cluster, namespaceParameter, deploymentName, request.Replicas, cancellationToken);
+
+        await auditLogger.LogAsync(new AuditEntry(
+            "kubernetes.deployment.scaled", cluster.OrganizationId, currentUser.UserId, currentUser.Email,
+            "KubernetesDeployment", $"{namespaceParameter}/{deploymentName}", $"scaled to {request.Replicas}"), cancellationToken);
+
+        return new KubernetesDeploymentDto(Guid.Empty, namespaceParameter, deploymentName, desired, ready, null, DateTime.UtcNow);
     }
 
     private IQueryable<KubernetesCluster> Scoped() =>

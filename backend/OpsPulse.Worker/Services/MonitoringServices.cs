@@ -302,6 +302,7 @@ public sealed class RetentionService(
                 db.ServiceChecks.RemoveRange(db.ServiceChecks.Where(c => c.CheckedAtUtc < cutoff));
                 db.ServerMetrics.RemoveRange(db.ServerMetrics.Where(m => m.CollectedAtUtc < cutoff));
                 db.DatabaseMetrics.RemoveRange(db.DatabaseMetrics.Where(m => m.CollectedAtUtc < cutoff));
+                db.SystemLogs.RemoveRange(db.SystemLogs.Where(l => l.TimestampUtc < cutoff));
 
                 var removed = await db.SaveChangesAsync(stoppingToken);
                 if (removed > 0)

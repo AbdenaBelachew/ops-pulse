@@ -8,6 +8,7 @@ using OpsPulse.Domain.Databases;
 using OpsPulse.Domain.Identity;
 using OpsPulse.Domain.Incidents;
 using OpsPulse.Domain.Kubernetes;
+using OpsPulse.Domain.Logging;
 using OpsPulse.Domain.Notifications;
 using OpsPulse.Domain.Organizations;
 using OpsPulse.Domain.Security;
@@ -31,6 +32,7 @@ public sealed class OpsPulseDbContext(DbContextOptions<OpsPulseDbContext> option
     public DbSet<KubernetesCluster> KubernetesClusters => Set<KubernetesCluster>();
     public DbSet<KubernetesNode> KubernetesNodes => Set<KubernetesNode>();
     public DbSet<KubernetesPod> KubernetesPods => Set<KubernetesPod>();
+    public DbSet<KubernetesDeployment> KubernetesDeployments => Set<KubernetesDeployment>();
     public DbSet<DockerHost> DockerHosts => Set<DockerHost>();
     public DbSet<DockerContainer> DockerContainers => Set<DockerContainer>();
     public DbSet<AlertRule> AlertRules => Set<AlertRule>();
@@ -40,6 +42,7 @@ public sealed class OpsPulseDbContext(DbContextOptions<OpsPulseDbContext> option
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+    public DbSet<SystemLog> SystemLogs => Set<SystemLog>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
