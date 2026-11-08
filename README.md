@@ -34,6 +34,7 @@ Modular monolith with Clean Architecture dependency direction:
 | `OpsPulse.Tests` | Unit, integration and security tests |
 
 Full development plan and per-milestone log: [`docs/PROGRESS.md`](docs/PROGRESS.md).
+**Step-by-step configuration & testing walkthrough: [`docs/GUIDE.md`](docs/GUIDE.md).**
 
 ## Repository Structure
 

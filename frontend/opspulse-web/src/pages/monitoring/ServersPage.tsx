@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Search, Trash2 } from 'lucide-react'
 import { deleteServer, listServers } from '../../api/monitoring'
@@ -95,7 +96,7 @@ export function ServersPage() {
                 serversQuery.data?.items.map((server) => (
                   <tr key={server.id} className="border-b border-navy-800 last:border-0 hover:bg-navy-800/40">
                     <td className="px-5 py-3.5">
-                      <p className="font-medium text-slate-200">{server.name}</p>
+                      <Link to={`/servers/${server.id}`} className="font-medium text-slate-200 hover:text-info">{server.name}</Link>
                       <p className="text-xs text-slate-500">{server.hostname} · {server.osName} · {server.cpuCores} cores · {(server.totalMemoryMb / 1024).toFixed(0)} GB</p>
                     </td>
                     <td className="px-5 py-3.5"><StatusBadge status={server.status === 'Online' ? 'Active' : 'Inactive'} /></td>

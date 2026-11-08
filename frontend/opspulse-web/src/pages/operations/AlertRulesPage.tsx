@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BellRing, Plus, Trash2 } from 'lucide-react'
+import { BellRing, Pencil, Plus, Trash2 } from 'lucide-react'
 import {
   createAlertChannel,
   createAlertRule,
@@ -11,6 +11,7 @@ import {
   listAlertRules,
   updateAlertRule,
   type AlertMetric,
+  type AlertRuleDto,
   type AlertSeverity,
   type ChannelType,
 } from '../../api/operations'
@@ -39,7 +40,7 @@ const severityStyles: Record<AlertSeverity, string> = {
   Informational: 'text-info bg-info/10 border-info/25',
 }
 
-function CreateRuleModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function RuleModal({ open, onClose, existing }: { open: boolean; onClose: () => void; existing?: AlertRuleDto | null }) {
   const queryClient = useQueryClient()
   const servicesQuery = useQuery({ queryKey: ['services'], queryFn: () => listServices({ pageSize: 100 }), enabled: open })
 
@@ -51,35 +52,58 @@ function CreateRuleModal({ open, onClose }: { open: boolean; onClose: () => void
   const [severity, setSeverity] = useState<AlertSeverity>('Warning')
   const [targetServiceId, setTargetServiceId] = useState('')
 
-  const createMutation = useMutation({
+  // Prefill when editing an existing rule.
+  useEffect(() => {
+    if (open) {
+      setName(existing?.name ?? '')
+      setMetric(existing?.metric ?? 'CpuUsage')
+      setThreshold(existing?.threshold ?? 85)
+      setDurationMinutes(existing?.durationMinutes ?? 0)
+      setCooldownMinutes(existing?.cooldownMinutes ?? 15)
+      setSeverity(existing?.severity ?? 'Warning')
+      setTargetServiceId(existing?.targetServiceId ?? '')
+    }
+  }, [open, existing])
+
+  const saveMutation = useMutation({
     mutationFn: () =>
-      createAlertRule({
-        name,
-        metric,
-        comparator: 'GreaterThan',
-        threshold,
-        durationMinutes,
-        cooldownMinutes,
-        severity,
-        targetServiceId: targetServiceId || null,
-      }),
+      existing
+        ? updateAlertRule(existing.id, {
+            name,
+            comparator: 'GreaterThan',
+            threshold,
+            durationMinutes,
+            cooldownMinutes,
+            severity,
+            targetServiceId: targetServiceId || null,
+          })
+        : createAlertRule({
+            name,
+            metric,
+            comparator: 'GreaterThan',
+            threshold,
+            durationMinutes,
+            cooldownMinutes,
+            severity,
+            targetServiceId: targetServiceId || null,
+          }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alert-rules'] })
-      toast.success('Alert rule created — evaluated on every check')
+      toast.success(existing ? 'Alert rule updated' : 'Alert rule created — evaluated on every check')
       onClose()
     },
-    onError: (e) => toast.error(extractApiError(e, 'Could not create the rule.')),
+    onError: (e) => toast.error(extractApiError(e, 'Could not save the rule.')),
   })
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
-    createMutation.mutate()
+    saveMutation.mutate()
   }
 
   const isHealthMetric = metric === 'ServiceDown' || metric === 'AgentHeartbeat'
 
   return (
-    <Modal open={open} title="Create alert rule" onClose={onClose}>
+    <Modal open={open} title={existing ? 'Edit alert rule' : 'Create alert rule'} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Field id="rule-name" label="Rule name" value={name} onChange={(e) => setName(e.target.value)} placeholder="High CPU" required />
         <div className="grid grid-cols-2 gap-3">
@@ -142,7 +166,7 @@ function CreateRuleModal({ open, onClose }: { open: boolean; onClose: () => void
         </div>
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" loading={createMutation.isPending}><BellRing className="h-4 w-4" />Create rule</Button>
+          <Button type="submit" loading={saveMutation.isPending}><BellRing className="h-4 w-4" />{existing ? "Save changes" : "Create rule"}</Button>
         </div>
       </form>
     </Modal>
@@ -152,7 +176,8 @@ function CreateRuleModal({ open, onClose }: { open: boolean; onClose: () => void
 export function AlertRulesPage() {
   const canManage = useAuthStore((s) => ['SuperAdmin', 'OrganizationAdmin', 'DevOpsEngineer'].includes(s.user?.role ?? ''))
   const queryClient = useQueryClient()
-  const [createOpen, setCreateOpen] = useState(false)
+  const [ruleModalOpen, setRuleModalOpen] = useState(false)
+  const [editingRule, setEditingRule] = useState<AlertRuleDto | null>(null)
   const [channelOpen, setChannelOpen] = useState(false)
   const [channelName, setChannelName] = useState('')
   const [channelType, setChannelType] = useState<ChannelType>('Email')
@@ -206,7 +231,7 @@ export function AlertRulesPage() {
         </div>
         <div className="flex gap-2">
           {canManage && <Button variant="secondary" onClick={() => setChannelOpen(true)}>Add channel</Button>}
-          {canManage && <Button onClick={() => setCreateOpen(true)}><Plus className="h-4 w-4" />Create rule</Button>}
+          {canManage && <Button onClick={() => { setEditingRule(null); setRuleModalOpen(true) }}><Plus className="h-4 w-4" />Create rule</Button>}
         </div>
       </div>
 
@@ -254,6 +279,14 @@ export function AlertRulesPage() {
                 </td>
                 {canManage && (
                   <td className="px-5 py-3 text-right">
+                    <button
+                      onClick={() => { setEditingRule(rule); setRuleModalOpen(true) }}
+                      aria-label={`Edit ${rule.name}`}
+                      title="Edit rule"
+                      className="mr-1 rounded-lg p-1.5 text-slate-500 hover:bg-navy-700 hover:text-slate-200"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
                     <button onClick={() => deleteRuleMutation.mutate(rule.id)} aria-label={`Delete ${rule.name}`} className="rounded-lg p-1.5 text-slate-500 hover:bg-critical/10 hover:text-critical">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -301,7 +334,7 @@ export function AlertRulesPage() {
         </table>
       </Card>
 
-      <CreateRuleModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <RuleModal open={ruleModalOpen} onClose={() => setRuleModalOpen(false)} existing={editingRule} />
 
       <Modal open={channelOpen} title="Add notification channel" onClose={() => setChannelOpen(false)}>
         <form

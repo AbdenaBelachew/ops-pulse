@@ -10,6 +10,7 @@ import { SystemSettingsPage } from './pages/settings/SystemSettingsPage'
 import { ApplicationsPage } from './pages/monitoring/ApplicationsPage'
 import { ApplicationDetailsPage } from './pages/monitoring/ApplicationDetailsPage'
 import { ServersPage } from './pages/monitoring/ServersPage'
+import { ServerDetailsPage } from './pages/monitoring/ServerDetailsPage'
 import { DatabasesPage } from './pages/monitoring/DatabasesPage'
 import { KubernetesPage } from './pages/monitoring/KubernetesPage'
 import { DockerPage } from './pages/monitoring/DockerPage'
@@ -32,6 +33,7 @@ function App() {
           <Route path="/applications" element={<ApplicationsPage />} />
           <Route path="/applications/:id" element={<ApplicationDetailsPage />} />
           <Route path="/servers" element={<ServersPage />} />
+          <Route path="/servers/:id" element={<ServerDetailsPage />} />
           <Route path="/databases" element={<DatabasesPage />} />
           <Route path="/kubernetes" element={<KubernetesPage />} />
           <Route path="/docker" element={<DockerPage />} />
