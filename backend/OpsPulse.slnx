@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="OpsPulse.Agent/OpsPulse.Agent.csproj" />
+  <Project Path="OpsPulse.API/OpsPulse.API.csproj" />
+  <Project Path="OpsPulse.Application/OpsPulse.Application.csproj" />
+  <Project Path="OpsPulse.Domain/OpsPulse.Domain.csproj" />
+  <Project Path="OpsPulse.Infrastructure/OpsPulse.Infrastructure.csproj" />
+  <Project Path="OpsPulse.Tests/OpsPulse.Tests.csproj" />
+  <Project Path="OpsPulse.Worker/OpsPulse.Worker.csproj" />
+</Solution>

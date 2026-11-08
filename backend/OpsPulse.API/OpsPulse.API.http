@@ -1,0 +1,6 @@
+@OpsPulse.API_HostAddress = http://localhost:5019
+
+GET {{OpsPulse.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
