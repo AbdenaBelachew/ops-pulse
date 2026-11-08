@@ -33,35 +33,37 @@ interface NavSection {
 const sections: NavSection[] = [
   {
     heading: null,
-    items: [{ to: '/', label: 'Overview', icon: LayoutDashboard, milestone: 1 }],
+    items: [{ to: '/', label: 'Overview', icon: LayoutDashboard, milestone: 0 }],
   },
   {
     heading: 'Monitoring',
-    items: [{ to: '/applications', label: 'Applications', icon: Globe, milestone: 3 }],
+    items: [
+      { to: '/applications', label: 'Applications', icon: Globe, milestone: 0 },
+    ],
   },
   {
     heading: 'Infrastructure',
     items: [
-      { to: '/servers', label: 'Servers', icon: Server, milestone: 6 },
-      { to: '/databases', label: 'Databases', icon: Database, milestone: 7 },
-      { to: '/kubernetes', label: 'Kubernetes', icon: Ship, milestone: 10 },
-      { to: '/docker', label: 'Docker', icon: Container, milestone: 11 },
-      { to: '/agents', label: 'Monitoring Agents', icon: Cpu, milestone: 6 },
+      { to: '/servers', label: 'Servers', icon: Server, milestone: 0 },
+      { to: '/databases', label: 'Databases', icon: Database, milestone: 0 },
+      { to: '/kubernetes', label: 'Kubernetes', icon: Ship, milestone: 0 },
+      { to: '/docker', label: 'Docker', icon: Container, milestone: 0 },
+      { to: '/agents', label: 'Monitoring Agents', icon: Cpu, milestone: 0 },
     ],
   },
   {
     heading: 'Operations',
     items: [
-      { to: '/incidents', label: 'Incidents', icon: AlertTriangle, milestone: 8 },
-      { to: '/alert-rules', label: 'Alert Rules', icon: BellRing, milestone: 9 },
-      { to: '/notifications', label: 'Notifications', icon: Mail, milestone: 9 },
-      { to: '/reports', label: 'Reports', icon: FileText, milestone: 9 },
+      { to: '/incidents', label: 'Incidents', icon: AlertTriangle, milestone: 0 },
+      { to: '/alert-rules', label: 'Alert Rules', icon: BellRing, milestone: 0 },
+      { to: '/notifications', label: 'Notifications', icon: Mail, milestone: 0 },
+      { to: '/reports', label: 'Reports', icon: FileText, milestone: 0 },
     ],
   },
   {
     heading: 'Administration',
     items: [
-      { to: '/audit-logs', label: 'Audit Logs', icon: ScrollText, milestone: 12 },
+      { to: '/audit-logs', label: 'Audit Logs', icon: ScrollText, milestone: 0 },
       { to: '/users', label: 'Users', icon: Users, milestone: 2 },
       { to: '/settings/organization', label: 'Organization', icon: Building2, milestone: 2 },
       { to: '/settings/system', label: 'System Settings', icon: Settings, milestone: 2 },
@@ -117,10 +119,10 @@ export function Sidebar() {
                   >
                     <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                     <span className="flex-1 truncate">{item.label}</span>
-                    {item.milestone > 2 && (
+                    {item.milestone > 0 && (
                       <span
                         className="rounded border border-navy-600 px-1 text-[9px] leading-4 text-slate-600"
-                        title={`Arrives in Milestone ${item.milestone}`}
+                        title={`Delivered in Milestone ${item.milestone}`}
                       >
                         M{item.milestone}
                       </span>

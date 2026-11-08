@@ -6,16 +6,109 @@
 |---|-----------|--------|
 | 1 | Foundation: solution, PostgreSQL, Redis, Docker, React, Tailwind | ✅ Complete (2026-11-08) |
 | 2 | Identity: authentication, JWT, roles, organizations | ✅ Complete (2026-11-08) |
-| 3 | Application registration and HTTP monitoring engine | ⬜ Not started |
-| 4 | Background scheduler and monitoring history | ⬜ Not started |
-| 5 | SignalR and real-time dashboard | ⬜ Not started |
-| 6 | Server monitoring agent | ⬜ Not started |
-| 7 | Database monitoring | ⬜ Not started |
-| 8 | Alert rules and incidents | ⬜ Not started |
-| 9 | Notifications and reporting | ⬜ Not started |
-| 10 | Kubernetes integration | ⬜ Not started |
-| 11 | Docker monitoring | ⬜ Not started |
-| 12 | Testing, performance, security, documentation, CI/CD, deployment | ⬜ Not started |
+| 3 | Application registration and HTTP monitoring engine | ✅ Complete (2026-11-08) |
+| 4 | Background scheduler and monitoring history | ✅ Complete (2026-11-08) |
+| 5 | SignalR and real-time dashboard | ✅ Complete (2026-11-08) |
+| 6 | Server monitoring agent | ✅ Complete (2026-11-08) |
+| 7 | Database monitoring | ✅ Complete (2026-11-08) |
+| 8 | Alert rules and incidents | ✅ Complete (2026-11-08) |
+| 9 | Notifications and reporting | ✅ Complete (2026-11-08) |
+| 10 | Kubernetes integration | ✅ Complete (2026-11-08) |
+| 11 | Docker monitoring | ✅ Complete (2026-11-08) |
+| 12 | Testing, performance, security, documentation, CI/CD, deployment | ✅ Complete (2026-11-08) |
+
+## Milestones 3-12 — Full Platform (2026-11-08)
+
+### Delivered
+
+**Application monitoring (M3/M4)** — service CRUD with validation, SSRF-safe
+`SafeHttpCheckEngine` (DNS resolved inside the socket connect callback with
+private-range blocking, defeating DNS rebinding), check history
+(`service_checks`), denormalized status transitions (Up/Degraded/Down),
+uptime/avg-response aggregation, manual "check now" endpoint, and the Worker
+scheduler running due checks every 10s with bounded concurrency (8 scopes).
+
+**Real-time (M5)** — `/hubs/monitoring` SignalR hub with JWT (query-string
+token for WebSockets), organization-scoped groups + platform group,
+Redis backplane shared by API and Worker, 8 event types
+(`ServiceStatusChanged`, `MetricsUpdated`, `IncidentCreated/Updated/Resolved`,
+`AgentConnected/Disconnected`, `AlertTriggered`); frontend singleton connection
+with automatic reconnect and query-cache invalidation hooks; live dashboard.
+
+**Server agent (M6)** — cross-platform `OpsPulse.Agent` (Windows performance
+counters, Linux /proc parsing) sending heartbeats + metric batches;
+`X-Api-Key` authentication scheme (hashed keys, prefix display, throttled
+last-used tracking); auto server registration; offline detection (stale
+heartbeat → `AgentDisconnected`); Agents page with one-time key display and
+deploy instructions.
+
+**Database monitoring (M7)** — PostgreSQL (pg_stat_activity, max_connections,
+pg_database_size) and SQL Server (dm_exec_sessions, user connections,
+database_files) engines; credentials AES-GCM encrypted at rest (key from
+configuration); health status + metric history; Databases page.
+
+**Alerts & incidents (M8)** — `AlertRule` with 7 metric types, comparators,
+sustained-duration windows, cooldowns and service scoping; `AlertEvaluator`
+with breach-state tracking, deduplication keys (rule+source), auto-resolution
+on recovery, recurring-breach events; incidents with full event timelines,
+acknowledge/resolve/comments; Incidents and Alert Rules pages with filters.
+
+**Notifications & reporting (M9)** — in-app notifications (unread counts,
+mark read/all) + email (MailKit/SMTP, config-gated) and webhook channels with
+delivery status tracking; uptime/incident/server-utilization reports with
+24h/7d/30d windows and CSV export; notification bell in the header.
+
+**Kubernetes (M10)** — cluster registration (stored kubeconfig encrypted, or
+local/in-cluster config), periodic sync of version/nodes/pods with restart
+counts and failed-pod detection; Kubernetes page with nodes/pods tables.
+
+**Docker (M11)** — Docker Engine integration (named pipe/unix/TCP) via
+Docker.DotNet; container inventory with CPU% (delta-based) and memory stats;
+sync scheduler every 30s; Docker page. Verified against the local Docker
+Desktop engine (18 containers).
+
+**Platform (M12)** — audit logging (isolated DbContext writes) for
+monitoring/identity/incident actions + Audit Logs page; Prometheus
+exposition endpoint (`/metrics`); retention policy (configurable, default
+30 days); 22 backend tests; Dockerfiles for API/Worker/Agent/Frontend(nginx);
+full-stack docker-compose profile; Kubernetes manifests (namespace, config,
+secret template, deployments, services, ingress with probes and resource
+limits); nginx reverse-proxy config; Prometheus scrape config; GitHub Actions
+CI (build+test+lint) and Release (GHCR images + k8s artifact bundles).
+
+### Verification results
+
+- `dotnet build` 0 errors; 22/22 tests; migration `AddMonitoringModules` (28 tables total).
+- Automated API suite (21 checks): service CRUD, real HTTP checks
+  (200 in 29ms; connection-refused detection), worker auto-checks, incident
+  auto-creation with dedup, notifications, API-key agent heartbeat + metrics,
+  server status from metrics, Docker sync (18 containers), reports, audit.
+- Second suite pass: incident "Service down — Broken API" auto-created
+  (Critical/Open), auto-notification delivered, database metrics collected from
+  the real PostgreSQL (6 active connections, 37ms).
+- Browser walkthrough (org admin): live dashboard KPIs (2/2 apps, 1 open
+  incident, avg 1025 ms), application details with self-updating check history
+  and response-time chart, incidents table with the auto-created incident,
+  Docker inventory (3 running / 18 containers), alert rule management.
+
+### Decisions and notes
+
+1. **Org-scoped resource creation** requires an organization account; the
+   SuperAdmin is platform-level (manages users, sees everything) and does not
+   own monitoring resources. API returns a clear 400 otherwise.
+2. **SSRF protection** resolves DNS per connection attempt inside
+   `SocketsHttpHandler.ConnectCallback` — validation and connection share one
+   resolution, closing the rebinding window. `Monitoring:AllowPrivateNetworks`
+   (dev-only) permits monitoring internal targets.
+3. **Refresh-token/credential/agent-key secrets are stored hashed or
+   AES-GCM-encrypted**; the encryption key never touches the database.
+4. **Alert evaluation state** (sustained windows, cooldowns) is in-memory in
+   the Worker — single-instance evaluation by design; the deduplication key
+   keeps incidents stable across restarts.
+5. **Kubernetes** degrades gracefully: unreachable clusters are marked so in
+   the UI with the last error rather than failing the worker.
+
+
 
 ## Milestone 2 — Identity (2026-11-08)
 

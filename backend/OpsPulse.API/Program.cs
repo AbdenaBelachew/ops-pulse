@@ -1,19 +1,22 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using OpsPulse.API.Extensions;
 using OpsPulse.API.Middleware;
-using OpsPulse.API.Services;
 using OpsPulse.Application;
 using OpsPulse.Application.Authorization;
 using OpsPulse.Application.Common;
 using OpsPulse.Domain.Common;
 using OpsPulse.Infrastructure;
 using OpsPulse.Infrastructure.Identity;
+using OpsPulse.Infrastructure.RealTime;
 using OpsPulse.Infrastructure.Seed;
+using OpsPulse.Infrastructure.Security;
+using Prometheus;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -27,9 +30,6 @@ builder.Host.UseSerilog((context, loggerConfiguration) => loggerConfiguration
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUser, CurrentUser>();
-
 // Presentation: controllers with string enum values in JSON.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -42,13 +42,20 @@ builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-// Distributed cache backed by Redis (consumed by caching, SignalR backplane and
-// rate limiting in later milestones).
+// Distributed cache + SignalR backplane (both processes reach the same clients).
+var redisConnection = builder.Configuration.GetConnectionString("Redis");
+
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.Configuration = redisConnection;
     options.InstanceName = "OpsPulse:";
 });
+
+builder.Services.AddSignalR()
+    .AddStackExchangeRedis(redisConnection!, redisOptions =>
+    {
+        redisOptions.Configuration.ChannelPrefix = StackExchange.Redis.RedisChannel.Literal("OpsPulse:signalr");
+    });
 
 // Health checks: API liveness plus readiness of its backing services.
 builder.Services.AddHealthChecks()
@@ -57,7 +64,7 @@ builder.Services.AddHealthChecks()
         name: "postgresql",
         tags: ["ready"])
     .AddRedis(
-        builder.Configuration.GetConnectionString("Redis")!,
+        redisConnection!,
         name: "redis",
         tags: ["ready"]);
 
@@ -89,7 +96,25 @@ builder.Services
             NameClaimType = "name",
             RoleClaimType = "role"
         };
-    });
+
+        // SignalR WebSockets cannot set headers — the access token arrives in the
+        // query string for hub negotiation and connection.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    })
+    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>(ApiKeyAuthenticationHandler.SchemeName, _ => { });
 
 // Authorization: policy-based; never rely on UI visibility for security.
 builder.Services.AddAuthorization(options =>
@@ -102,6 +127,15 @@ builder.Services.AddAuthorization(options =>
 
     options.AddPolicy(Policies.CanManagePlatform, policy => policy.RequireRole(
         RoleNames.SuperAdmin));
+
+    options.AddPolicy(Policies.CanManageMonitoring, policy => policy.RequireRole(
+        RoleNames.SuperAdmin, RoleNames.OrganizationAdmin, RoleNames.DevOpsEngineer));
+
+    options.AddPolicy(Policies.CanOperateMonitoring, policy => policy.RequireRole(
+        RoleNames.SuperAdmin, RoleNames.OrganizationAdmin, RoleNames.DevOpsEngineer, RoleNames.Operator));
+
+    options.AddPolicy(Policies.CanManageIncidents, policy => policy.RequireRole(
+        RoleNames.SuperAdmin, RoleNames.OrganizationAdmin, RoleNames.DevOpsEngineer, RoleNames.Operator));
 });
 
 // Rate limiting: protect authentication endpoints per client IP.
@@ -147,6 +181,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
+
+app.MapHub<MonitoringHub>("/hubs/monitoring");
+
+// Prometheus-compatible metrics endpoint (Prometheus exposition text format).
+app.MapGet("/metrics", async (CancellationToken cancellationToken) =>
+{
+    using var stream = new MemoryStream();
+    await Prometheus.Metrics.DefaultRegistry.CollectAndExportAsTextAsync(stream, cancellationToken);
+    var body = Encoding.UTF8.GetString(stream.ToArray());
+    return Results.Text(body, "text/plain; version=0.0.4; charset=utf-8");
+});
 
 app.MapHealthChecks("/health", new HealthCheckOptions
 {

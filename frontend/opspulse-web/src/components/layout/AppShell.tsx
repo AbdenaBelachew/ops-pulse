@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
-import { LogOut, Menu } from 'lucide-react'
+import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { Bell, LogOut, Menu } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { Toasts } from '../ui/Toasts'
 import { useAuthStore } from '../../stores/authStore'
 import { fetchMe, logout } from '../../api/auth'
+import { getUnreadCount } from '../../api/operations'
 import { toast } from '../../stores/toastStore'
 
 function initials(name: string): string {
@@ -20,6 +22,12 @@ export function AppShell() {
   const navigate = useNavigate()
   const { user, accessToken, setUser, clear } = useAuthStore()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
+  const unreadQuery = useQuery({
+    queryKey: ['unread-count'],
+    queryFn: getUnreadCount,
+    refetchInterval: 30_000,
+  })
 
   // Bootstrap the profile after a full page reload (token persisted, user may be stale).
   useEffect(() => {
@@ -76,7 +84,19 @@ export function AppShell() {
           </button>
           <div className="hidden lg:block" />
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Link
+              to="/notifications"
+              className="relative rounded-lg p-2 text-slate-400 hover:bg-navy-800 hover:text-slate-200"
+              aria-label={`Notifications${unreadQuery.data ? ` (${unreadQuery.data} unread)` : ''}`}
+            >
+              <Bell className="h-4 w-4" />
+              {(unreadQuery.data ?? 0) > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-critical px-1 text-[9px] font-bold text-white">
+                  {unreadQuery.data! > 9 ? '9+' : unreadQuery.data}
+                </span>
+              )}
+            </Link>
             {user && (
               <div className="flex items-center gap-2.5">
                 <div className="text-right leading-tight">

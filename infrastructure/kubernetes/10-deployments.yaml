@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opspulse-api
+  namespace: opspulse
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: opspulse-api
+  template:
+    metadata:
+      labels:
+        app: opspulse-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/OWNER/opspulse-api:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: opspulse-config
+            - secretRef:
+                name: opspulse-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: opspulse
+spec:
+  selector:
+    app: opspulse-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opspulse-worker
+  namespace: opspulse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opspulse-worker
+  template:
+    metadata:
+      labels:
+        app: opspulse-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/OWNER/opspulse-worker:latest
+          envFrom:
+            - configMapRef:
+                name: opspulse-config
+            - secretRef:
+                name: opspulse-secrets
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opspulse-frontend
+  namespace: opspulse
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: opspulse-frontend
+  template:
+    metadata:
+      labels:
+        app: opspulse-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/OWNER/opspulse-frontend:latest
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: opspulse
+spec:
+  selector:
+    app: opspulse-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opspulse
+  namespace: opspulse
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "100"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: opspulse.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 8080
+          - path: /hubs
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 8080
+          - path: /health
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 8080

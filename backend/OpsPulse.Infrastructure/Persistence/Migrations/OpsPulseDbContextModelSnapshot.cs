@@ -184,6 +184,485 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                     b.ToTable("asp_net_user_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("OpsPulse.Domain.Alerts.AlertChannel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Target")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("target");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_alert_channels");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_alert_channels_organization_id");
+
+                    b.ToTable("alert_channels", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Alerts.AlertRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Comparator")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("comparator");
+
+                    b.Property<int>("CooldownMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("cooldown_minutes");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_minutes");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<string>("Metric")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("metric");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("severity");
+
+                    b.Property<Guid?>("TargetServiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("target_service_id");
+
+                    b.Property<double>("Threshold")
+                        .HasColumnType("double precision")
+                        .HasColumnName("threshold");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_alert_rules");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_alert_rules_organization_id");
+
+                    b.HasIndex("TargetServiceId")
+                        .HasDatabaseName("ix_alert_rules_target_service_id");
+
+                    b.ToTable("alert_rules", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Audit.AuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("action");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Details")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("details");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UserEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("user_email");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_logs");
+
+                    b.HasIndex("Action")
+                        .HasDatabaseName("ix_audit_logs_action");
+
+                    b.HasIndex("OrganizationId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_audit_logs_organization_id_occurred_at_utc");
+
+                    b.ToTable("audit_logs", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Containers.DockerContainer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContainerId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("container_id");
+
+                    b.Property<double?>("CpuUsagePercent")
+                        .HasColumnType("double precision")
+                        .HasColumnName("cpu_usage_percent");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("DockerHostId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("docker_host_id");
+
+                    b.Property<string>("Image")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("image");
+
+                    b.Property<long?>("MemoryLimitMb")
+                        .HasColumnType("bigint")
+                        .HasColumnName("memory_limit_mb");
+
+                    b.Property<long?>("MemoryUsedMb")
+                        .HasColumnType("bigint")
+                        .HasColumnName("memory_used_mb");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("state");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("SyncedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("synced_at_utc");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_docker_containers");
+
+                    b.HasIndex("DockerHostId", "ContainerId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_docker_containers_docker_host_id_container_id");
+
+                    b.ToTable("docker_containers", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Containers.DockerHost", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("ContainerCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("container_count");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("endpoint");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsReachable")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_reachable");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTime?>("LastSyncedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_synced_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("RunningCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("running_count");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_docker_hosts");
+
+                    b.HasIndex("OrganizationId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_docker_hosts_organization_id_name");
+
+                    b.ToTable("docker_hosts", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Databases.DatabaseConnection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CredentialsCipher")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("credentials_cipher");
+
+                    b.Property<string>("DatabaseName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("database_name");
+
+                    b.Property<string>("DatabaseType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("database_type");
+
+                    b.Property<string>("Health")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("health");
+
+                    b.Property<string>("Host")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("host");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTime?>("LastCheckedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_checked_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("integer")
+                        .HasColumnName("port");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("username");
+
+                    b.HasKey("Id")
+                        .HasName("pk_database_connections");
+
+                    b.HasIndex("OrganizationId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_database_connections_organization_id_name");
+
+                    b.ToTable("database_connections", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Databases.DatabaseMetric", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int?>("ActiveConnections")
+                        .HasColumnType("integer")
+                        .HasColumnName("active_connections");
+
+                    b.Property<DateTime>("CollectedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("collected_at_utc");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("DatabaseConnectionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("database_connection_id");
+
+                    b.Property<long?>("DatabaseSizeMb")
+                        .HasColumnType("bigint")
+                        .HasColumnName("database_size_mb");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("error_message");
+
+                    b.Property<bool>("IsReachable")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_reachable");
+
+                    b.Property<int?>("MaxConnections")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_connections");
+
+                    b.Property<int?>("ResponseTimeMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("response_time_ms");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_database_metrics");
+
+                    b.HasIndex("DatabaseConnectionId", "CollectedAtUtc")
+                        .HasDatabaseName("ix_database_metrics_database_connection_id_collected_at_utc");
+
+                    b.ToTable("database_metrics", (string)null);
+                });
+
             modelBuilder.Entity("OpsPulse.Domain.Identity.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -232,6 +711,448 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_refresh_tokens_user_id");
 
                     b.ToTable("refresh_tokens", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Incidents.Incident", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("AcknowledgedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("acknowledged_at_utc");
+
+                    b.Property<Guid?>("AcknowledgedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("acknowledged_by_user_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("DeduplicationKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("deduplication_key");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTime>("LastEventAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_event_at_utc");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at_utc");
+
+                    b.Property<Guid?>("ResolvedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resolved_by_user_id");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("severity");
+
+                    b.Property<string>("SourceName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("source_name");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("source_type");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_incidents");
+
+                    b.HasIndex("DeduplicationKey")
+                        .HasDatabaseName("ix_incidents_deduplication_key");
+
+                    b.HasIndex("StartedAtUtc")
+                        .HasDatabaseName("ix_incidents_started_at_utc");
+
+                    b.HasIndex("OrganizationId", "Status")
+                        .HasDatabaseName("ix_incidents_organization_id_status");
+
+                    b.ToTable("incidents", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Incidents.IncidentEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ActorName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("actor_name");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("IncidentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("incident_id");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("message");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_incident_events");
+
+                    b.HasIndex("IncidentId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_incident_events_incident_id_occurred_at_utc");
+
+                    b.ToTable("incident_events", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesCluster", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ApiEndpoint")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("api_endpoint");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("FailedPodCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_pod_count");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsReachable")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_reachable");
+
+                    b.Property<string>("KubeConfigCipher")
+                        .HasMaxLength(100000)
+                        .HasColumnType("character varying(100000)")
+                        .HasColumnName("kube_config_cipher");
+
+                    b.Property<string>("KubernetesVersion")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kubernetes_version");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTime?>("LastSyncedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_synced_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("NodeCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("node_count");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("PodCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("pod_count");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kubernetes_clusters");
+
+                    b.HasIndex("OrganizationId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kubernetes_clusters_organization_id_name");
+
+                    b.ToTable("kubernetes_clusters", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesNode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ClusterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cluster_id");
+
+                    b.Property<long?>("CpuCapacityCores")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cpu_capacity_cores");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("KubernetesVersion")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kubernetes_version");
+
+                    b.Property<long?>("MemoryCapacityMb")
+                        .HasColumnType("bigint")
+                        .HasColumnName("memory_capacity_mb");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("name");
+
+                    b.PrimitiveCollection<string[]>("Roles")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("roles");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("SyncedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("synced_at_utc");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kubernetes_nodes");
+
+                    b.HasIndex("ClusterId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kubernetes_nodes_cluster_id_name");
+
+                    b.ToTable("kubernetes_nodes", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesPod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ClusterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cluster_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsFailed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_failed");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Namespace")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("namespace");
+
+                    b.Property<string>("NodeName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("node_name");
+
+                    b.Property<int>("RestartCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("restart_count");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("SyncedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("synced_at_utc");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kubernetes_pods");
+
+                    b.HasIndex("ClusterId", "IsFailed")
+                        .HasDatabaseName("ix_kubernetes_pods_cluster_id_is_failed");
+
+                    b.HasIndex("ClusterId", "Namespace", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kubernetes_pods_cluster_id_namespace_name");
+
+                    b.ToTable("kubernetes_pods", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Notifications.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("channel");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateTime?>("DeliveredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("delivered_at_utc");
+
+                    b.Property<string>("DeliveryStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("delivery_status");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("message");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateTime?>("ReadAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at_utc");
+
+                    b.Property<string>("Target")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("target");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("title");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notifications");
+
+                    b.HasIndex("OrganizationId", "UserId", "IsRead", "CreatedAtUtc")
+                        .HasDatabaseName("ix_notifications_organization_id_user_id_is_read_created_at_utc");
+
+                    b.ToTable("notifications", (string)null);
                 });
 
             modelBuilder.Entity("OpsPulse.Domain.Organizations.Organization", b =>
@@ -286,6 +1207,213 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OpsPulse.Domain.Security.ApiKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("key_hash");
+
+                    b.Property<string>("KeyPrefix")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("key_prefix");
+
+                    b.Property<DateTime?>("LastUsedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_used_at_utc");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_api_keys");
+
+                    b.HasIndex("KeyHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_api_keys_key_hash");
+
+                    b.HasIndex("OrganizationId")
+                        .HasDatabaseName("ix_api_keys_organization_id");
+
+                    b.ToTable("api_keys", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Servers.Server", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AgentVersion")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("agent_version");
+
+                    b.Property<int>("CpuCores")
+                        .HasColumnType("integer")
+                        .HasColumnName("cpu_cores");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Hostname")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("hostname");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<double?>("LastCpuUsagePercent")
+                        .HasColumnType("double precision")
+                        .HasColumnName("last_cpu_usage_percent");
+
+                    b.Property<DateTime?>("LastHeartbeatAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_heartbeat_at_utc");
+
+                    b.Property<double?>("LastMemoryUsagePercent")
+                        .HasColumnType("double precision")
+                        .HasColumnName("last_memory_usage_percent");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("OsName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("os_name");
+
+                    b.Property<string>("OsVersion")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("os_version");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TotalMemoryMb")
+                        .HasColumnType("bigint")
+                        .HasColumnName("total_memory_mb");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_servers");
+
+                    b.HasIndex("LastHeartbeatAtUtc")
+                        .HasDatabaseName("ix_servers_last_heartbeat_at_utc");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_servers_status");
+
+                    b.HasIndex("OrganizationId", "Hostname")
+                        .IsUnique()
+                        .HasDatabaseName("ix_servers_organization_id_hostname");
+
+                    b.ToTable("servers", (string)null);
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Servers.ServerMetric", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CollectedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("collected_at_utc");
+
+                    b.Property<double>("CpuUsagePercent")
+                        .HasColumnType("double precision")
+                        .HasColumnName("cpu_usage_percent");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<double?>("DiskUsedPercent")
+                        .HasColumnType("double precision")
+                        .HasColumnName("disk_used_percent");
+
+                    b.Property<long>("MemoryTotalMb")
+                        .HasColumnType("bigint")
+                        .HasColumnName("memory_total_mb");
+
+                    b.Property<long>("MemoryUsedMb")
+                        .HasColumnType("bigint")
+                        .HasColumnName("memory_used_mb");
+
+                    b.Property<double?>("NetworkInMbps")
+                        .HasColumnType("double precision")
+                        .HasColumnName("network_in_mbps");
+
+                    b.Property<double?>("NetworkOutMbps")
+                        .HasColumnType("double precision")
+                        .HasColumnName("network_out_mbps");
+
+                    b.Property<Guid>("ServerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("server_id");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_server_metrics");
+
+                    b.HasIndex("ServerId", "CollectedAtUtc")
+                        .HasDatabaseName("ix_server_metrics_server_id_collected_at_utc");
+
+                    b.ToTable("server_metrics", (string)null);
+                });
+
             modelBuilder.Entity("OpsPulse.Domain.Services.MonitoredService", b =>
                 {
                     b.Property<Guid>("Id")
@@ -297,9 +1425,19 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("check_interval_seconds");
 
+                    b.Property<int>("ConsecutiveFailures")
+                        .HasColumnType("integer")
+                        .HasColumnName("consecutive_failures");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CurrentStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("current_status");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
@@ -321,6 +1459,14 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
+
+                    b.Property<DateTime?>("LastCheckedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_checked_at_utc");
+
+                    b.Property<int?>("LastResponseTimeMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("last_response_time_ms");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -352,6 +1498,9 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                     b.HasIndex("IsActive")
                         .HasDatabaseName("ix_monitored_services_is_active");
 
+                    b.HasIndex("LastCheckedAtUtc")
+                        .HasDatabaseName("ix_monitored_services_last_checked_at_utc");
+
                     b.HasIndex("OrganizationId", "Environment")
                         .HasDatabaseName("ix_monitored_services_organization_id_environment");
 
@@ -365,6 +1514,61 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_monitored_services_timeout_positive", "timeout_seconds > 0");
                         });
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Services.ServiceCheck", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CheckedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("checked_at_utc");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("error_message");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_success");
+
+                    b.Property<int>("ResponseTimeMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("response_time_ms");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("service_id");
+
+                    b.Property<string>("StatusAfter")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status_after");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("integer")
+                        .HasColumnName("status_code");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_service_checks");
+
+                    b.HasIndex("ServiceId", "CheckedAtUtc")
+                        .HasDatabaseName("ix_service_checks_service_id_checked_at_utc");
+
+                    b.ToTable("service_checks", (string)null);
                 });
 
             modelBuilder.Entity("OpsPulse.Infrastructure.Identity.ApplicationUser", b =>
@@ -529,6 +1733,84 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_asp_net_user_tokens_asp_net_users_user_id");
                 });
 
+            modelBuilder.Entity("OpsPulse.Domain.Alerts.AlertChannel", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Organizations.Organization", "Organizations")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_alert_channels_organizations_organization_id");
+
+                    b.Navigation("Organizations");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Alerts.AlertRule", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Organizations.Organization", "Organizations")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_alert_rules_organizations_organization_id");
+
+                    b.HasOne("OpsPulse.Domain.Services.MonitoredService", null)
+                        .WithMany()
+                        .HasForeignKey("TargetServiceId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_alert_rules_monitored_services_target_service_id");
+
+                    b.Navigation("Organizations");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Containers.DockerContainer", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Containers.DockerHost", "DockerHost")
+                        .WithMany("Containers")
+                        .HasForeignKey("DockerHostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_docker_containers_docker_hosts_docker_host_id");
+
+                    b.Navigation("DockerHost");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Containers.DockerHost", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Organizations.Organization", "Organizations")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_docker_hosts_organizations_organization_id");
+
+                    b.Navigation("Organizations");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Databases.DatabaseConnection", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Organizations.Organization", "Organizations")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_database_connections_organizations_organization_id");
+
+                    b.Navigation("Organizations");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Databases.DatabaseMetric", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Databases.DatabaseConnection", "DatabaseConnection")
+                        .WithMany("Metrics")
+                        .HasForeignKey("DatabaseConnectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_database_metrics_database_connections_database_connection_id");
+
+                    b.Navigation("DatabaseConnection");
+                });
+
             modelBuilder.Entity("OpsPulse.Domain.Identity.RefreshToken", b =>
                 {
                     b.HasOne("OpsPulse.Infrastructure.Identity.ApplicationUser", null)
@@ -537,6 +1819,114 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_refresh_tokens_asp_net_users_user_id");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Incidents.Incident", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Organizations.Organization", "Organizations")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_incidents_organizations_organization_id");
+
+                    b.Navigation("Organizations");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Incidents.IncidentEvent", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Incidents.Incident", "Incident")
+                        .WithMany("Events")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_incident_events_incidents_incident_id");
+
+                    b.Navigation("Incident");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesCluster", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Organizations.Organization", "Organizations")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_kubernetes_clusters_organizations_organization_id");
+
+                    b.Navigation("Organizations");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesNode", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Kubernetes.KubernetesCluster", "Cluster")
+                        .WithMany("Nodes")
+                        .HasForeignKey("ClusterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_kubernetes_nodes_kubernetes_clusters_cluster_id");
+
+                    b.Navigation("Cluster");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesPod", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Kubernetes.KubernetesCluster", "Cluster")
+                        .WithMany("Pods")
+                        .HasForeignKey("ClusterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_kubernetes_pods_kubernetes_clusters_cluster_id");
+
+                    b.Navigation("Cluster");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Notifications.Notification", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Organizations.Organization", "Organizations")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_notifications_organizations_organization_id");
+
+                    b.Navigation("Organizations");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Security.ApiKey", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Organizations.Organization", "Organizations")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_api_keys_organizations_organization_id");
+
+                    b.Navigation("Organizations");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Servers.Server", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Organizations.Organization", "Organizations")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_servers_organizations_organization_id");
+
+                    b.Navigation("Organizations");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Servers.ServerMetric", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Servers.Server", "Server")
+                        .WithMany("Metrics")
+                        .HasForeignKey("ServerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_server_metrics_servers_server_id");
+
+                    b.Navigation("Server");
                 });
 
             modelBuilder.Entity("OpsPulse.Domain.Services.MonitoredService", b =>
@@ -551,6 +1941,18 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                     b.Navigation("Organization");
                 });
 
+            modelBuilder.Entity("OpsPulse.Domain.Services.ServiceCheck", b =>
+                {
+                    b.HasOne("OpsPulse.Domain.Services.MonitoredService", "Service")
+                        .WithMany("Checks")
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_service_checks_monitored_services_service_id");
+
+                    b.Navigation("Service");
+                });
+
             modelBuilder.Entity("OpsPulse.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.HasOne("OpsPulse.Domain.Organizations.Organization", null)
@@ -560,9 +1962,41 @@ namespace OpsPulse.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_asp_net_users_organizations_organization_id");
                 });
 
+            modelBuilder.Entity("OpsPulse.Domain.Containers.DockerHost", b =>
+                {
+                    b.Navigation("Containers");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Databases.DatabaseConnection", b =>
+                {
+                    b.Navigation("Metrics");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Incidents.Incident", b =>
+                {
+                    b.Navigation("Events");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Kubernetes.KubernetesCluster", b =>
+                {
+                    b.Navigation("Nodes");
+
+                    b.Navigation("Pods");
+                });
+
             modelBuilder.Entity("OpsPulse.Domain.Organizations.Organization", b =>
                 {
                     b.Navigation("MonitoredServices");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Servers.Server", b =>
+                {
+                    b.Navigation("Metrics");
+                });
+
+            modelBuilder.Entity("OpsPulse.Domain.Services.MonitoredService", b =>
+                {
+                    b.Navigation("Checks");
                 });
 #pragma warning restore 612, 618
         }

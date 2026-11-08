@@ -5,7 +5,7 @@ namespace OpsPulse.Domain.Services;
 
 /// <summary>
 /// An externally hosted application or API endpoint that OpsPulse monitors
-/// with periodic HTTP checks. The check engine itself lands in Milestone 3.
+/// with periodic HTTP checks.
 /// </summary>
 public class MonitoredService : BaseEntity
 {
@@ -29,4 +29,15 @@ public class MonitoredService : BaseEntity
     public string ExpectedStatusCodes { get; set; } = "200";
 
     public bool IsActive { get; set; } = true;
+
+    // Denormalized status maintained by the check engine.
+    public ServiceStatus CurrentStatus { get; set; } = ServiceStatus.Unknown;
+
+    public DateTime? LastCheckedAtUtc { get; set; }
+
+    public int? LastResponseTimeMs { get; set; }
+
+    public int ConsecutiveFailures { get; set; }
+
+    public ICollection<ServiceCheck> Checks { get; set; } = [];
 }

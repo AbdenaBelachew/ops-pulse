@@ -1,82 +1,112 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   AlertTriangle,
+  ArrowRight,
   BellRing,
   Building2,
-  Container,
-  Cpu,
+  CheckCircle2,
   Database,
-  FileText,
-  Globe,
   Server,
-  Ship,
   Users,
-  type LucideIcon,
+  XCircle,
 } from 'lucide-react'
-import { fetchApiHealth, fetchInfrastructureHealth } from '../api/health'
-import { listUsers } from '../api/users'
+import { listServices, fetchInfrastructureHealth, listServers, listDatabases } from '../api/monitoring'
+import { listIncidents, getUnreadCount, type IncidentDto } from '../api/operations'
 import { useAuthStore } from '../stores/authStore'
+import { useRealtimeInvalidation } from '../realtime/useRealtimeInvalidation'
 import { StatusBadge } from '../components/ui/StatusBadge'
 import { Card } from '../components/ui/Card'
 
-interface ModuleTile {
-  title: string
-  description: string
-  path: string
-  milestone: number
-  icon: LucideIcon
+const severityDot: Record<string, string> = {
+  Critical: 'bg-critical',
+  Warning: 'bg-warning',
+  Informational: 'bg-info',
 }
 
-const modules: ModuleTile[] = [
-  { title: 'Applications', description: 'HTTP checks, uptime and response times', path: '/applications', milestone: 3, icon: Globe },
-  { title: 'Servers', description: 'CPU, RAM, disk and network from agents', path: '/servers', milestone: 6, icon: Server },
-  { title: 'Databases', description: 'PostgreSQL and SQL Server health', path: '/databases', milestone: 7, icon: Database },
-  { title: 'Kubernetes', description: 'Clusters, nodes, pods and restarts', path: '/kubernetes', milestone: 10, icon: Ship },
-  { title: 'Docker', description: 'Container status and resource usage', path: '/docker', milestone: 11, icon: Container },
-  { title: 'Agents', description: 'Deploy lightweight monitoring agents', path: '/agents', milestone: 6, icon: Cpu },
-  { title: 'Incidents', description: 'Automatic incident creation and tracking', path: '/incidents', milestone: 8, icon: AlertTriangle },
-  { title: 'Alert Rules', description: 'Thresholds, cooldowns and channels', path: '/alert-rules', milestone: 9, icon: BellRing },
-  { title: 'Reports', description: 'Uptime, utilization and CSV exports', path: '/reports', milestone: 9, icon: FileText },
-]
+function KpiCard({
+  label,
+  value,
+  detail,
+  icon: Icon,
+  tone = 'info',
+  to,
+}: {
+  label: string
+  value: string
+  detail?: string
+  icon: typeof Server
+  tone?: 'info' | 'healthy' | 'warning' | 'critical'
+  to?: string
+}) {
+  const tones = {
+    info: 'bg-info/15 text-info',
+    healthy: 'bg-healthy/15 text-healthy',
+    warning: 'bg-warning/15 text-warning',
+    critical: 'bg-critical/15 text-critical',
+  }
 
-function SkeletonCard() {
-  return (
-    <Card className="animate-pulse">
-      <div className="h-3 w-24 rounded bg-navy-700" />
-      <div className="mt-3 h-6 w-32 rounded bg-navy-700" />
-      <div className="mt-4 h-3 w-40 rounded bg-navy-800" />
+  const content = (
+    <Card className="h-full transition-colors hover:border-navy-500">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs text-slate-500">{label}</p>
+          <p className="mt-1 text-2xl font-semibold text-white">{value}</p>
+          {detail && <p className="mt-0.5 text-[11px] text-slate-600">{detail}</p>}
+        </div>
+        <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${tones[tone]}`}>
+          <Icon className="h-4.5 w-4.5" aria-hidden="true" />
+        </span>
+      </div>
     </Card>
   )
+
+  return to ? <Link to={to} className="block">{content}</Link> : content
 }
 
 export function DashboardPage() {
   const user = useAuthStore((state) => state.user)
+  const queryClient = useQueryClient()
 
-  const apiHealthQuery = useQuery({ queryKey: ['api-health'], queryFn: fetchApiHealth, refetchInterval: 30_000 })
-  const infraHealthQuery = useQuery({
-    queryKey: ['infra-health'],
-    queryFn: fetchInfrastructureHealth,
+  useRealtimeInvalidation({
+    ServiceStatusChanged: ['dashboard-services', 'infra-health', 'incidents'],
+    MetricsUpdated: ['dashboard-servers'],
+    IncidentCreated: ['dashboard-incidents', 'unread-count'],
+    IncidentResolved: ['dashboard-incidents'],
+    AlertTriggered: ['unread-count'],
+    AgentConnected: ['dashboard-servers'],
+    AgentDisconnected: ['dashboard-servers'],
+  })
+
+  const servicesQuery = useQuery({ queryKey: ['dashboard-services'], queryFn: () => listServices({ pageSize: 100 }), refetchInterval: 30_000 })
+  const serversQuery = useQuery({ queryKey: ['dashboard-servers'], queryFn: () => listServers({ pageSize: 100 }), refetchInterval: 30_000 })
+  const databasesQuery = useQuery({ queryKey: ['dashboard-databases'], queryFn: () => listDatabases({ pageSize: 100 }), refetchInterval: 60_000 })
+  const infraQuery = useQuery({ queryKey: ['infra-health'], queryFn: fetchInfrastructureHealth, refetchInterval: 30_000 })
+  const incidentsQuery = useQuery({
+    queryKey: ['dashboard-incidents'],
+    queryFn: () => listIncidents({ page: 1, pageSize: 6 }),
     refetchInterval: 30_000,
   })
-  const membersQuery = useQuery({
-    queryKey: ['team-size'],
-    queryFn: () => listUsers({ page: 1, pageSize: 1 }),
-    staleTime: 60_000,
-  })
+  const unreadQuery = useQuery({ queryKey: ['unread-count'], queryFn: getUnreadCount, refetchInterval: 30_000 })
+  void queryClient
 
-  const infra = infraHealthQuery.data
-  const postgres = infra?.entries['postgresql']
-  const redis = infra?.entries['redis']
-  const firstName = user?.fullName.split(/\s+/)[0] ?? 'there'
+  const services = servicesQuery.data?.items ?? []
+  const up = services.filter((s) => s.currentStatus === 'Up').length
+  const down = services.filter((s) => s.currentStatus === 'Down').length
+  const degraded = services.filter((s) => s.currentStatus === 'Degraded').length
+  const onlineServers = (serversQuery.data?.items ?? []).filter((s) => s.status === 'Online').length
+  const healthyDatabases = (databasesQuery.data?.items ?? []).filter((d) => d.health === 'Healthy').length
+  const responseTimes = services.map((s) => s.avgResponseMs24h).filter((v): v is number => v !== null)
+  const avgResponse = responseTimes.length > 0 ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) : null
+  const openIncidents = incidentsQuery.data?.items.filter((i) => i.status !== 'Resolved') ?? []
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-white">Good to see you, {firstName}</h1>
+          <h1 className="text-xl font-semibold text-white">Good to see you, {user?.fullName.split(/\s+/)[0] ?? 'there'}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            {user?.organizationName ?? 'Platform overview'} — live foundation status from the OpsPulse API.
+            {user?.organizationName ?? 'Platform overview'} — live status streamed over SignalR.
           </p>
         </div>
         {user?.organizationId && (
@@ -91,121 +121,97 @@ export function DashboardPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {apiHealthQuery.isLoading || infraHealthQuery.isLoading ? (
-          <>
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </>
-        ) : (
-          <>
-            <Card>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white">OpsPulse API</p>
-                  <p className="mt-0.5 text-xs text-slate-500">REST API v1</p>
-                </div>
-                <StatusBadge status="Healthy" />
-              </div>
-              <p className="mt-4 text-xs text-slate-500">
-                Version <span className="font-medium text-slate-300">{apiHealthQuery.data?.version ?? '—'}</span>
-              </p>
-            </Card>
-
-            <Card>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white">PostgreSQL</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Primary datastore</p>
-                </div>
-                <StatusBadge status={postgres?.status ?? 'Unhealthy'} />
-              </div>
-              <p className="mt-4 text-xs text-slate-500">
-                Check latency{' '}
-                <span className="font-medium text-slate-300">
-                  {postgres ? `${postgres.durationMs.toFixed(0)} ms` : '—'}
-                </span>
-              </p>
-            </Card>
-
-            <Card>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white">Redis</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Distributed cache</p>
-                </div>
-                <StatusBadge status={redis?.status ?? 'Unhealthy'} />
-              </div>
-              <p className="mt-4 text-xs text-slate-500">
-                Check latency{' '}
-                <span className="font-medium text-slate-300">
-                  {redis ? `${redis.durationMs.toFixed(0)} ms` : '—'}
-                </span>
-              </p>
-            </Card>
-
-            <Card>
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-white">Team members</p>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {user?.organizationName ?? 'All organizations'}
-                  </p>
-                </div>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-info/15 text-info">
-                  <Users className="h-4 w-4" aria-hidden="true" />
-                </span>
-              </div>
-              <p className="mt-4 text-xs text-slate-500">
-                <span className="font-medium text-slate-300">{membersQuery.data?.totalCount ?? '—'}</span>{' '}
-                accounts
-              </p>
-            </Card>
-          </>
-        )}
+        <KpiCard
+          label="Applications"
+          value={`${up + degraded + down}/${services.length}`}
+          detail={`${up} up · ${degraded} degraded · ${down} down`}
+          icon={CheckCircle2}
+          tone={down > 0 ? 'critical' : degraded > 0 ? 'warning' : 'healthy'}
+          to="/applications"
+        />
+        <KpiCard
+          label="Servers online"
+          value={`${onlineServers}/${serversQuery.data?.totalCount ?? 0}`}
+          detail="agents reporting"
+          icon={Server}
+          tone={onlineServers > 0 ? 'healthy' : 'info'}
+          to="/servers"
+        />
+        <KpiCard
+          label="Databases healthy"
+          value={`${healthyDatabases}/${databasesQuery.data?.totalCount ?? 0}`}
+          detail="registered connections"
+          icon={Database}
+          tone="info"
+          to="/databases"
+        />
+        <KpiCard
+          label="Open incidents"
+          value={`${openIncidents.length}`}
+          detail={unreadQuery.data ? `${unreadQuery.data} unread notifications` : undefined}
+          icon={openIncidents.some((i) => i.severity === 'Critical') ? XCircle : AlertTriangle}
+          tone={openIncidents.length > 0 ? 'warning' : 'healthy'}
+          to="/incidents"
+        />
       </div>
 
-      <h2 className="mt-8 text-sm font-semibold text-white">Modules</h2>
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Link
-          to="/users"
-          className="group rounded-xl border border-navy-600 bg-navy-800 p-4 transition-colors hover:border-info/40"
-        >
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-info/15 text-info">
-              <Users className="h-4.5 w-4.5" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-white">User management</p>
-              <p className="truncate text-xs text-slate-500">Roles, access and accounts</p>
-            </div>
-            <span className="ml-auto rounded border border-healthy/30 bg-healthy/10 px-1.5 text-[9px] font-medium text-healthy">
-              LIVE
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-white">Recent incidents</h2>
+            <Link to="/incidents" className="inline-flex items-center gap-1 text-xs text-info hover:underline">
+              View all <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="mt-3 space-y-2">
+            {(incidentsQuery.data?.items.length ?? 0) === 0 ? (
+              <p className="py-6 text-center text-xs text-slate-600">No incidents recorded.</p>
+            ) : (
+              incidentsQuery.data?.items.slice(0, 5).map((incident: IncidentDto) => (
+                <Link
+                  key={incident.id}
+                  to="/incidents"
+                  className="flex items-center gap-2.5 rounded-lg border border-navy-700 bg-navy-900/60 px-3 py-2 hover:border-navy-500"
+                >
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${severityDot[incident.severity] ?? 'bg-slate-500'}`} aria-hidden="true" />
+                  <span className="min-w-0 flex-1 truncate text-xs text-slate-300">{incident.title}</span>
+                  <StatusBadge status={incident.status === 'Resolved' ? 'Healthy' : incident.status === 'Acknowledged' ? 'Degraded' : 'Unhealthy'} />
+                </Link>
+              ))
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-white">Platform</h2>
+            <span className="text-[11px] text-slate-600">
+              API {infraQuery.data?.status.toLowerCase() ?? '…'}
             </span>
           </div>
-        </Link>
-
-        {modules.map((module) => (
-          <Link
-            key={module.path}
-            to={module.path}
-            className="group rounded-xl border border-navy-700 bg-navy-850 p-4 transition-colors hover:border-navy-500"
-          >
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy-800 text-slate-400 group-hover:text-slate-200">
-                <module.icon className="h-4.5 w-4.5" aria-hidden="true" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-white">{module.title}</p>
-                <p className="truncate text-xs text-slate-500">{module.description}</p>
-              </div>
-              <span className="ml-auto rounded border border-navy-600 px-1.5 text-[9px] text-slate-600">
-                M{module.milestone}
-              </span>
+          <dl className="mt-3 space-y-2 text-xs">
+            <div className="flex items-center justify-between rounded-lg border border-navy-700 bg-navy-900/60 px-3 py-2">
+              <dt className="text-slate-500">Average response (24h)</dt>
+              <dd className="font-medium text-slate-300">{avgResponse !== null ? `${avgResponse} ms` : '—'}</dd>
             </div>
-          </Link>
-        ))}
+            <div className="flex items-center justify-between rounded-lg border border-navy-700 bg-navy-900/60 px-3 py-2">
+              <dt className="text-slate-500">Team members</dt>
+              <dd className="font-medium text-slate-300">
+                <Link to="/users" className="inline-flex items-center gap-1 hover:text-info">
+                  <Users className="h-3 w-3" /> manage
+                </Link>
+              </dd>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-navy-700 bg-navy-900/60 px-3 py-2">
+              <dt className="text-slate-500">Unread notifications</dt>
+              <dd className="font-medium text-slate-300">
+                <Link to="/notifications" className="inline-flex items-center gap-1 hover:text-info">
+                  <BellRing className="h-3 w-3" /> {unreadQuery.data ?? 0}
+                </Link>
+              </dd>
+            </div>
+          </dl>
+        </Card>
       </div>
     </div>
   )

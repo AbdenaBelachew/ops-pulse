@@ -1,12 +1,14 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using OpsPulse.Application.Common;
 using OpsPulse.Domain.Common;
 
-namespace OpsPulse.API.Services;
+namespace OpsPulse.Infrastructure.Security;
 
 /// <summary>
 /// Resolves the authenticated principal from validated JWT claims
 /// (claim types configured in the JWT bearer options: sub, email, name, org, role).
+/// Works for both user tokens and agent API-key principals (org claim).
 /// </summary>
 public sealed class CurrentUser(IHttpContextAccessor httpContextAccessor) : ICurrentUser
 {

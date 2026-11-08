@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/opspulse
+
+jobs:
+  build-and-push:
+    name: Build & push images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: tags
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build & push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/OpsPulse.API/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-api:${{ steps.tags.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}-api:latest
+
+      - name: Build & push Worker image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/OpsPulse.Worker/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-worker:${{ steps.tags.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}-worker:latest
+
+      - name: Build & push Agent image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          file: backend/OpsPulse.Agent/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-agent:${{ steps.tags.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}-agent:latest
+
+      - name: Build & push Frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-frontend:${{ steps.tags.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}-frontend:latest
+
+      - name: Package deployment artifacts
+        run: |
+          tar -czf opspulse-k8s-${{ steps.tags.outputs.version }}.tar.gz infrastructure/kubernetes infrastructure/prometheus docker-compose.yml .env.example
+          sha256sum opspulse-k8s-${{ steps.tags.outputs.version }}.tar.gz > opspulse-k8s-${{ steps.tags.outputs.version }}.tar.gz.sha256
+
+      - name: Attach artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            opspulse-k8s-${{ steps.tags.outputs.version }}.tar.gz
+            opspulse-k8s-${{ steps.tags.outputs.version }}.tar.gz.sha256

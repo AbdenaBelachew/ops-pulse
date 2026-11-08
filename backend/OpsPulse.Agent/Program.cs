@@ -8,7 +8,8 @@ builder.Services.AddSerilog(options => options
     .Enrich.FromLogContext()
     .WriteTo.Console());
 
-builder.Services.AddHostedService<AgentWorker>();
+builder.Services.AddHttpClient();
+builder.Services.AddHostedService<AgentService>();
 
 var host = builder.Build();
 host.Run();

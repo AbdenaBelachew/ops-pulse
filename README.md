@@ -6,16 +6,17 @@ OpsPulse is a centralized monitoring platform for backend applications and APIs,
 health, PostgreSQL and SQL Server databases, Kubernetes clusters, Docker containers,
 incidents and alerting — built as a professional-grade, production-oriented product.
 
-![Status](https://img.shields.io/badge/milestone-2%20of%2012%20complete-3b82f6)
+![Status](https://img.shields.io/badge/milestones-12%20of%2012%20complete-22c55e)
 
 ## Technology Stack
 
 | Layer | Technologies |
 |---|---|
 | Backend | ASP.NET Core Web API 10, C#, Clean Architecture, EF Core 10, PostgreSQL, ASP.NET Core Identity, JWT |
-| Realtime & Cache | Redis, Serilog, background/hosted services, SignalR *(Milestone 5+)* |
-| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4, React Router 7, TanStack Query 5, Zustand, Lucide |
-| DevOps | Docker, Docker Compose, Kubernetes *(later)*, GitHub Actions *(later)*, Nginx *(later)* |
+| Realtime & Jobs | SignalR (Redis backplane), background schedulers, Serilog, Prometheus metrics |
+| Monitoring engines | SSRF-safe HTTP checks, PostgreSQL/SQL Server probes, Kubernetes API, Docker Engine |
+| Frontend | React 19, TypeScript, Vite 8, Tailwind CSS 4, React Router 7, TanStack Query 5, Zustand, Recharts, SignalR client |
+| DevOps | Docker, Docker Compose, Kubernetes manifests, Nginx, GitHub Actions (CI + GHCR release) |
 
 ## Architecture
 
@@ -92,6 +93,28 @@ npm run dev
 # http://localhost:5173
 ```
 
+## What OpsPulse Does
+
+- **Application monitoring** — register HTTP services; a dedicated Worker runs
+  SSRF-protected checks (DNS-rebinding safe) on configurable intervals, tracks
+  status (Up/Degraded/Down), uptime and response times with full history.
+- **Real-time dashboard** — SignalR with a Redis backplane streams status
+  changes, metrics and incidents to every connected client.
+- **Server monitoring** — a lightweight cross-platform agent (Windows/Linux)
+  reports CPU, RAM, disk and network via hashed API keys; stale agents are
+  marked offline automatically.
+- **Database monitoring** — PostgreSQL and SQL Server availability, active/max
+  connections and size; credentials encrypted with AES-GCM at rest.
+- **Kubernetes & Docker** — cluster nodes/pods with restart and failure
+  tracking; container inventory with live CPU/memory from Docker Engine.
+- **Alerts & incidents** — threshold rules with sustained windows and
+  cooldowns raise deduplicated incidents automatically and resolve them on
+  recovery; in-app, email (SMTP) and webhook notification channels.
+- **Reports** — uptime, incident and utilization analytics with CSV export.
+- **Security & audit** — JWT with refresh-token rotation (reuse detection),
+  policy-based RBAC, organization-level tenant isolation, rate limiting,
+  audit logging, Prometheus metrics, retention policies.
+
 ## Verification Endpoints
 
 | Endpoint | Purpose |
@@ -100,6 +123,8 @@ npm run dev
 | `GET /api/v1/health` | API metadata (service, version, environment) |
 | `GET /api/v1/auth/me` | Authenticated user profile (JWT) |
 | `GET /api/v1/users` | Tenant-scoped user list (paged, filterable) |
+| `GET /api/v1/services` | Monitored applications with live status |
+| `GET /metrics` | Prometheus exposition endpoint |
 | `GET /openapi/v1.json` | OpenAPI document |
 | `GET /scalar` | Interactive API reference UI (development) |
 
@@ -114,6 +139,25 @@ npm run dev
 - Roles: `SuperAdmin`, `OrganizationAdmin`, `DevOpsEngineer`, `Operator`, `Viewer` —
   enforced server-side via authorization policies; the UI never gates security.
 - Authentication endpoints are rate-limited (20 req/min per client IP).
+
+## Deployment
+
+```bash
+# Full stack in Docker (API + Worker + Frontend + PostgreSQL + Redis)
+cp .env.example .env
+# add JWT_KEY, ENCRYPTION_KEY, SEED_ADMIN_PASSWORD to .env for the full profile
+docker compose --profile full up -d --build
+# Frontend: http://localhost:8090 · API: http://localhost:8080
+
+# Kubernetes
+kubectl apply -f infrastructure/kubernetes/00-namespace-config.yaml
+# create the real secret first (see template comments), then:
+kubectl apply -f infrastructure/kubernetes/10-deployments.yaml
+```
+
+GitHub Actions run on every PR (backend build + tests, frontend lint + build);
+releases publish versioned images to GHCR and attach Kubernetes artifact
+bundles.
 
 ## Development Commands
 

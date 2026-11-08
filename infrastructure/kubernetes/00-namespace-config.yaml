@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opspulse
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opspulse-config
+  namespace: opspulse
+data:
+  ASPNETCORE_ENVIRONMENT: "Production"
+  ASPNETCORE_URLS: "http://+:8080"
+  ConnectionStrings__Redis: "redis:6379,abortConnect=false"
+  Jwt__Issuer: "OpsPulse.API"
+  Jwt__Audience: "OpsPulse.Web"
+  Jwt__AccessTokenLifetimeMinutes: "15"
+  Jwt__RefreshTokenLifetimeDays: "7"
+  Monitoring__AllowPrivateNetworks: "false"
+  Monitoring__DegradedResponseTimeMs: "2000"
+  Monitoring__RetentionDays: "30"
+---
+# Template only — create the real secret with kubectl, never commit real values:
+#   kubectl -n opspulse create secret generic opspulse-secrets \
+#     --from-literal=ConnectionStrings__DefaultConnection='Host=postgres;...' \
+#     --from-literal=Jwt__Key='<64+ char key>' \
+#     --from-literal=Encryption__Key='<64 hex chars>' \
+#     --from-literal=Seed__SuperAdmin__Password='<strong password>'
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opspulse-secrets
+  namespace: opspulse
+type: Opaque
+stringData:
+  ConnectionStrings__DefaultConnection: "REPLACE_ME"
+  Jwt__Key: "REPLACE_ME"
+  Encryption__Key: "REPLACE_ME"
+  Seed__SuperAdmin__Password: "REPLACE_ME"

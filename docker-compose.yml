@@ -35,6 +35,61 @@ services:
       timeout: 5s
       retries: 5
 
+  # ---- Full application stack (profile "full") ----
+  api:
+    build:
+      context: ./backend
+      dockerfile: OpsPulse.API/Dockerfile
+    container_name: opspulse-api
+    profiles: ["full"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-opspulse};Username=${POSTGRES_USER:-opspulse};Password=${POSTGRES_PASSWORD:-opspulse_dev}
+      ConnectionStrings__Redis: redis:6379,abortConnect=false
+      Jwt__Key: ${JWT_KEY:?JWT_KEY is required for the full profile}
+      Encryption__Key: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required for the full profile}
+      Seed__SuperAdmin__Email: ${SEED_ADMIN_EMAIL:-admin@opspulse.dev}
+      Seed__SuperAdmin__Password: ${SEED_ADMIN_PASSWORD:?SEED_ADMIN_PASSWORD is required for the full profile}
+    ports:
+      - "8080:8080"
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: OpsPulse.Worker/Dockerfile
+    container_name: opspulse-worker
+    profiles: ["full"]
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-opspulse};Username=${POSTGRES_USER:-opspulse};Password=${POSTGRES_PASSWORD:-opspulse_dev}
+      ConnectionStrings__Redis: redis:6379,abortConnect=false
+      Encryption__Key: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required for the full profile}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: opspulse-frontend
+    profiles: ["full"]
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8090:80"
+
 volumes:
   postgres-data:
   redis-data:
