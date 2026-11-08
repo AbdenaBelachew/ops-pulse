@@ -1,0 +1,40 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+artifacts/
+TestResults/
+*.binlog
+.dotnet/
+.nuget/
+project.lock.json
+
+# Node
+node_modules/
+dist/
+*.local
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment / secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+appsettings.*.Local.json
+secrets.json
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
