@@ -54,6 +54,7 @@ function ServiceModal({
   const [environment, setEnvironment] = useState<ServiceEnvironment>('Production')
   const [interval, setIntervalSeconds] = useState(60)
   const [timeoutSeconds, setTimeoutSeconds] = useState(10)
+  const [expectedStatusCodes, setExpectedStatusCodes] = useState('200-299')
 
   useEffect(() => {
     if (open) {
@@ -63,14 +64,15 @@ function ServiceModal({
       setEnvironment(existing?.environment ?? 'Production')
       setIntervalSeconds(existing?.checkIntervalSeconds ?? 60)
       setTimeoutSeconds(existing?.timeoutSeconds ?? 10)
+      setExpectedStatusCodes(existing?.expectedStatusCodes ?? '200-299')
     }
   }, [open, existing])
 
   const saveMutation = useMutation({
     mutationFn: () =>
       existing
-        ? updateService(existing.id, { name, url, description: description || null, environment, checkIntervalSeconds: interval, timeoutSeconds })
-        : createService({ name, url, description: description || null, environment, checkIntervalSeconds: interval, timeoutSeconds, expectedStatusCodes: '200' }),
+        ? updateService(existing.id, { name, url, description: description || null, environment, checkIntervalSeconds: interval, timeoutSeconds, expectedStatusCodes: expectedStatusCodes.replace(/\s+/g, '') })
+        : createService({ name, url, description: description || null, environment, checkIntervalSeconds: interval, timeoutSeconds, expectedStatusCodes: expectedStatusCodes.replace(/\s+/g, '') }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] })
       toast.success(existing ? 'Service updated' : 'Service created — first check runs within seconds')
@@ -109,8 +111,21 @@ function ServiceModal({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <Field id="svc-timeout" label="Timeout (s)" type="number" min={1} max={60} value={timeoutSeconds} onChange={(e) => setTimeoutSeconds(Number(e.target.value))} required />
-          <div className="self-end pb-1 text-[11px] leading-relaxed text-slate-600">Expected status: <span className="text-slate-400">200</span></div>
+          <Field
+            id="svc-codes"
+            label="Expected status codes"
+            value={expectedStatusCodes}
+            onChange={(e) => setExpectedStatusCodes(e.target.value)}
+            placeholder="200-299"
+            pattern="^\s*\d{3}(\s*-\s*\d{3})?(\s*,\s*\d{3}(\s*-\s*\d{3})?)*\s*$"
+            title='Codes or ranges separated by commas, e.g. "200", "200,204" or "200-399"'
+            required
+          />
         </div>
+        <p className="-mt-2 text-[11px] leading-relaxed text-slate-600">
+          Redirects (301/302, e.g. to a login page) are followed and the final page is judged.
+          Use <span className="text-slate-400">200-399</span> to also accept a redirect that can't be followed.
+        </p>
         <div className="flex justify-end gap-2 pt-1">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
           <Button type="submit" loading={saveMutation.isPending}>{existing ? 'Save changes' : 'Add service'}</Button>

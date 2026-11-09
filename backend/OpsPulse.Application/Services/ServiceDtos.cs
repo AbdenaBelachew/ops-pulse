@@ -74,8 +74,8 @@ public sealed class CreateServiceRequestValidator : AbstractValidator<CreateServ
         RuleFor(x => x.CheckIntervalSeconds).InclusiveBetween(10, 3600);
         RuleFor(x => x.TimeoutSeconds).InclusiveBetween(1, 60);
         RuleFor(x => x.ExpectedStatusCodes)
-            .Matches(@"^\d{3}(,\d{3})*$")
-            .WithMessage("Expected status codes must be 3-digit codes separated by commas, e.g. \"200,204\".");
+            .Matches(ExpectedStatusCodesFormat.Pattern)
+            .WithMessage(ExpectedStatusCodesFormat.Message);
     }
 }
 
@@ -95,7 +95,17 @@ public sealed class UpdateServiceRequestValidator : AbstractValidator<UpdateServ
         RuleFor(x => x.TimeoutSeconds).InclusiveBetween(1, 60)
             .When(x => x.TimeoutSeconds is not null);
         RuleFor(x => x.ExpectedStatusCodes)
-            .Matches(@"^\d{3}(,\d{3})*$")
+            .Matches(ExpectedStatusCodesFormat.Pattern)
+            .WithMessage(ExpectedStatusCodesFormat.Message)
             .When(x => x.ExpectedStatusCodes is not null);
     }
+}
+
+/// <summary>"200", "200,204", or ranges such as "200-399" (the checker follows redirects).</summary>
+public static class ExpectedStatusCodesFormat
+{
+    public const string Pattern = @"^\d{3}(-\d{3})?(,\d{3}(-\d{3})?)*$";
+
+    public const string Message =
+        "Expected status codes must be 3-digit codes or ranges separated by commas, e.g. \"200\", \"200,204\" or \"200-399\".";
 }

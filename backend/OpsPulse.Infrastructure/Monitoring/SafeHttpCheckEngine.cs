@@ -31,15 +31,7 @@ public sealed class SafeHttpCheckEngine(IOptions<MonitoringOptions> options, ILo
             return Failure(started, "Invalid URL — must be absolute http(s).");
         }
 
-        HashSet<int> expectedCodes;
-        try
-        {
-            expectedCodes = service.ExpectedStatusCodes
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(int.Parse)
-                .ToHashSet();
-        }
-        catch (FormatException)
+        if (!TryParseExpectedCodes(service.ExpectedStatusCodes, out var expectedCodes))
         {
             return Failure(started, "Invalid expected status code list.");
         }
@@ -48,7 +40,12 @@ public sealed class SafeHttpCheckEngine(IOptions<MonitoringOptions> options, ILo
         {
             using var handler = new SocketsHttpHandler
             {
-                AllowAutoRedirect = false,
+                // Follow redirects (e.g. an app answering 302 → /Account/Login) and judge
+                // the final response. Every hop opens its connection through the
+                // ConnectCallback below, so each redirect target is SSRF-validated too;
+                // HTTPS → HTTP downgrades are never followed by .NET.
+                AllowAutoRedirect = true,
+                MaxAutomaticRedirections = 5,
                 AutomaticDecompression = DecompressionMethods.All,
                 UseCookies = false,
                 ConnectCallback = async (context, connectCancellationToken) =>
@@ -88,7 +85,7 @@ public sealed class SafeHttpCheckEngine(IOptions<MonitoringOptions> options, ILo
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeoutCts.Token);
             var elapsedMs = ElapsedMs(started);
             var statusCode = (int)response.StatusCode;
-            var isSuccess = expectedCodes.Contains(statusCode);
+            var isSuccess = expectedCodes(statusCode);
 
             var statusAfter = !isSuccess
                 ? ServiceStatus.Down
@@ -115,6 +112,37 @@ public sealed class SafeHttpCheckEngine(IOptions<MonitoringOptions> options, ILo
         {
             return Failure(started, $"Check error: {exception.Message}");
         }
+    }
+
+    /// <summary>
+    /// Parses "200", "200,204" or ranges such as "200-299,301" into a predicate.
+    /// </summary>
+    public static bool TryParseExpectedCodes(string? value, out Func<int, bool> matches)
+    {
+        matches = _ => false;
+        var ranges = new List<(int From, int To)>();
+
+        foreach (var part in (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var bounds = part.Split('-', StringSplitOptions.TrimEntries);
+            if (bounds.Length is < 1 or > 2 ||
+                !int.TryParse(bounds[0], out var from) ||
+                !int.TryParse(bounds[^1], out var to) ||
+                from < 100 || to > 599 || from > to)
+            {
+                return false;
+            }
+
+            ranges.Add((from, to));
+        }
+
+        if (ranges.Count == 0)
+        {
+            return false;
+        }
+
+        matches = code => ranges.Any(r => code >= r.From && code <= r.To);
+        return true;
     }
 
     private HttpCheckResult Failure(long started, string message) =>

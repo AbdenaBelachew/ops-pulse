@@ -325,15 +325,16 @@ immediately.
 | Environment | Development / Staging / Production | Development |
 | Check interval | **10 – 3600 s** | 30 |
 | Timeout | **1 – 60 s** | 10 |
-| Expected status codes | comma-separated list | `200` or `200,204,301` |
+| Expected status codes | codes or ranges, comma-separated (default `200-299`) | `200`, `200,204`, `200-399` |
 
 3. Within one scheduler tick (≤ 10 s) the first check runs.
 
 **How a check is judged** ([R7](#r7-status-definitions)): an expected status code
 within `Monitoring:DegradedResponseTimeMs` (default 2000 ms) → **Up**; expected
 code but slower → **Degraded**; anything else (unexpected code, timeout, DNS/TLS
-error, blocked address) → **Down**. Redirects are **not** followed — list `301`/`302` as
-expected codes if the endpoint redirects.
+error, blocked address) → **Down**. Redirects are **followed** (up to 5 hops, each hop
+SSRF-checked, never HTTPS → HTTP) and the **final** response is judged. An app that
+answers `302 → /Account/Login` is therefore **Up** when its login page returns 200.
 
 > **SSRF protection.** Checks resolve DNS inside the socket connect callback and
 > refuse non-public addresses *before* a socket opens, which also defeats DNS
@@ -1197,7 +1198,8 @@ a new server; delete the old entry under Servers.
 | Worker exits at startup | DB/Redis not healthy yet | `docker compose ps`, wait for healthy, restart the Worker |
 | Service checks never run | Worker not running | Start `OpsPulse.Worker`; look for `Service check scheduler started` |
 | Check fails `Blocked non-public address` | SSRF protection | Expected in production; allow private networks only on trusted internal deployments |
-| Check Down with `Unexpected status code 301` | Redirects aren't followed | Use the final URL, or add `301,302` to expected codes |
+| Check Down with `Unexpected status code 3xx` | More than 5 redirects, or an HTTPS → HTTP redirect (not followed) | Use the final URL, or set expected codes to `200-399` |
+| Check Down with `Unexpected status code 401/403` | The page needs a login | Monitor a public page (login page or a health URL), or add `401` to expected codes |
 | Agent logs `OpsPulse__ApiKey is not configured` | Env var missing | Set it (see [Phase 6](#phase-6--server-monitoring-agent)) |
 | Agent shows 401 | Wrong or revoked key | Create a new key; keys are shown only once |
 | Server flaps Online/Offline | Interval ≥ offline threshold | Keep `IntervalSeconds` well below `AgentOfflineAfterSeconds` (e.g. 30 vs 90) |
