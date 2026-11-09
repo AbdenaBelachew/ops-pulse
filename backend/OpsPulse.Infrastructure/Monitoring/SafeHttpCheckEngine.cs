@@ -130,16 +130,6 @@ public sealed class SafeHttpCheckEngine(IOptions<MonitoringOptions> options, ILo
             return true;
         }
 
-        if (address.AddressFamily == AddressFamily.InterNetwork)
-        {
-            var octets = address.GetAddressBytes();
-            return !(octets[0] == 127 || octets[0] == 10 || octets[0] == 0 ||
-                     (octets[0] == 172 && octets[1] >= 16 && octets[1] <= 31) ||
-                     (octets[0] == 192 && octets[1] == 168) ||
-                     (octets[0] == 169 && octets[1] == 254));
-        }
-
-        // IPv6: loopback (::1), link-local (fe80::/10) and unique-local (fc00::/7) are private.
-        return !(IPAddress.IsLoopback(address) || address.IsIPv6LinkLocal || address.IsIPv6SiteLocal);
+        return NetworkAddressPolicy.IsPublic(address);
     }
 }

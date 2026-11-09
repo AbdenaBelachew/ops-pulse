@@ -11,6 +11,9 @@ metadata:
 data:
   ASPNETCORE_ENVIRONMENT: "Production"
   ASPNETCORE_URLS: "http://+:8080"
+  # The API applies pending EF Core migrations at startup (EF takes a migration
+  # lock, so multiple API replicas starting together are safe).
+  Database__MigrateOnStartup: "true"
   ConnectionStrings__Redis: "redis:6379,abortConnect=false"
   Jwt__Issuer: "OpsPulse.API"
   Jwt__Audience: "OpsPulse.Web"

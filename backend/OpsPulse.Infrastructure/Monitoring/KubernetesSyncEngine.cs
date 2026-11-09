@@ -131,17 +131,10 @@ public sealed class KubernetesSyncEngine(
             return KubernetesClientConfiguration.BuildConfigFromConfigFile();
         }
 
+        // Parse the decrypted kubeconfig from memory — credentials never touch disk.
         var yaml = protector.Unprotect(cluster.KubeConfigCipher);
-        var tempFile = Path.Combine(Path.GetTempPath(), $"opspulse-kubeconfig-{Guid.NewGuid():N}.yaml");
-        try
-        {
-            await File.WriteAllTextAsync(tempFile, yaml, cancellationToken);
-            return KubernetesClientConfiguration.BuildConfigFromConfigFile(tempFile);
-        }
-        finally
-        {
-            File.Delete(tempFile);
-        }
+        await using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(yaml));
+        return await KubernetesClientConfiguration.BuildConfigFromConfigFileAsync(stream);
     }
 
     /// <summary>Reads the last <paramref name="tailLines"/> lines of a pod's log output.</summary>

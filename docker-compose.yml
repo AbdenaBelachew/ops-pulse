@@ -51,6 +51,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      Database__MigrateOnStartup: "true"
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-opspulse};Username=${POSTGRES_USER:-opspulse};Password=${POSTGRES_PASSWORD:-opspulse_dev}
       ConnectionStrings__Redis: redis:6379,abortConnect=false
       Jwt__Key: ${JWT_KEY:?JWT_KEY is required for the full profile}

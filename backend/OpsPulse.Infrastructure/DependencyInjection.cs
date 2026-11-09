@@ -60,6 +60,22 @@ public static class DependencyInjection
 
         // Cross-cutting.
         services.AddHttpClient();
+
+        // Webhook deliveries target tenant-supplied URLs: apply the same SSRF policy
+        // as HTTP checks, never follow redirects, and bound the request time.
+        services.AddHttpClient("webhooks", client => client.Timeout = TimeSpan.FromSeconds(10))
+            .ConfigurePrimaryHttpMessageHandler(provider =>
+            {
+                var allowPrivate = provider.GetRequiredService<IOptions<MonitoringOptions>>().Value.AllowPrivateNetworks;
+                return new SocketsHttpHandler
+                {
+                    AllowAutoRedirect = false,
+                    UseCookies = false,
+                    ConnectCallback = (context, cancellationToken) =>
+                        NetworkAddressPolicy.ConnectAsync(context, allowPrivate, cancellationToken)
+                };
+            });
+
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, Security.CurrentUser>();
         services.AddSingleton<ICredentialProtector, CredentialProtector>();

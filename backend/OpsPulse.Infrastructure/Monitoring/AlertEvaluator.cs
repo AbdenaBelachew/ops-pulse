@@ -29,7 +29,9 @@ public sealed class AlertEvaluator(
     // Breach/cooldown state; static because a single worker instance owns evaluation.
     private static readonly ConcurrentDictionary<string, BreachState> States = new();
 
-    private sealed record BreachState(DateTime FirstBreachedAtUtc, DateTime? LastResolvedAtUtc);
+    // FirstBreachedAtUtc is null while the condition is clear; LastResolvedAtUtc is
+    // kept after an auto-resolve so the cooldown window can be enforced.
+    private sealed record BreachState(DateTime? FirstBreachedAtUtc, DateTime? LastResolvedAtUtc);
 
     public async Task EvaluateMetricAsync(
         Guid organizationId,
@@ -96,13 +98,25 @@ public sealed class AlertEvaluator(
 
         if (!breached)
         {
-            States.TryRemove(key, out _);
-
             var openIncident = await incidentManager.FindOpenByDeduplicationKeyAsync(key, cancellationToken);
             if (openIncident is not null)
             {
                 await incidentManager.ResolveAsync(openIncident, null, "OpsPulse",
                     "Auto-resolved: condition cleared.", cancellationToken);
+
+                // Remember the resolution time so the cooldown window applies.
+                States[key] = new BreachState(null, now);
+            }
+            else if (States.TryGetValue(key, out var clearState) &&
+                     clearState.LastResolvedAtUtc is { } lastResolved &&
+                     now - lastResolved < TimeSpan.FromMinutes(rule.CooldownMinutes))
+            {
+                // Still inside the cooldown: reset only the sustained-breach timer.
+                States[key] = clearState with { FirstBreachedAtUtc = null };
+            }
+            else
+            {
+                States.TryRemove(key, out _);
             }
 
             return;
@@ -243,7 +257,7 @@ public sealed class AlertEvaluator(
                     if (!string.IsNullOrEmpty(channel.Target))
                     {
                         var client = httpClientFactory.CreateClient("webhooks");
-                        await client.PostAsJsonAsync(channel.Target, new
+                        using var response = await client.PostAsJsonAsync(channel.Target, new
                         {
                             incident.Id,
                             incident.Title,
@@ -252,6 +266,9 @@ public sealed class AlertEvaluator(
                             Source = incident.SourceName,
                             StartedAtUtc = incident.StartedAtUtc
                         }, cancellationToken);
+
+                        // A non-2xx answer is a failed delivery, not a sent one.
+                        response.EnsureSuccessStatusCode();
                         notification.DeliveryStatus = DeliveryStatus.Sent;
                     }
                     else

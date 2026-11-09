@@ -82,7 +82,7 @@ ASPNETCORE_ENVIRONMENT=Development dotnet tool run dotnet-ef -- database update 
 ```bash
 cd backend/OpsPulse.API
 dotnet run
-# http://localhost:5000  — Swagger UI: http://localhost:5000/scalar
+# http://localhost:5000  — API reference (Scalar): http://localhost:5000/scalar
 ```
 
 ### 4. Run the frontend
@@ -149,6 +149,7 @@ cp .env.example .env
 # add JWT_KEY, ENCRYPTION_KEY, SEED_ADMIN_PASSWORD to .env for the full profile
 docker compose --profile full up -d --build
 # Frontend: http://localhost:8090 · API: http://localhost:8080
+# The API applies database migrations on startup (Database__MigrateOnStartup=true).
 
 # Kubernetes
 kubectl apply -f infrastructure/kubernetes/00-namespace-config.yaml

@@ -113,6 +113,23 @@ public sealed class AgentHeartbeatMonitor(
                     await db.SaveChangesAsync(stoppingToken);
                     logger.LogInformation("Marked {Count} server(s) offline (stale heartbeat)", staleServers.Count);
                 }
+
+                // Evaluate "Agent heartbeat missing" rules for every offline server on each
+                // tick so sustained-duration windows can elapse. Recovery is evaluated by the
+                // API when the agent reports again.
+                var evaluator = scope.ServiceProvider.GetRequiredService<IAlertEvaluator>();
+                var offlineServers = await db.Servers
+                    .AsNoTracking()
+                    .Where(s => s.Status == ServerStatus.Offline)
+                    .Select(s => new { s.Id, s.OrganizationId, s.Name, s.LastHeartbeatAtUtc })
+                    .ToListAsync(stoppingToken);
+
+                foreach (var server in offlineServers)
+                {
+                    await evaluator.EvaluateHealthAsync(server.OrganizationId, AlertMetric.AgentHeartbeat,
+                        isHealthy: false, "server", server.Id, server.Name,
+                        $"no heartbeat since {server.LastHeartbeatAtUtc:u}", stoppingToken);
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

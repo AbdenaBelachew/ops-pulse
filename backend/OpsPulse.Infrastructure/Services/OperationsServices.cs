@@ -403,6 +403,9 @@ public sealed class AgentIngestService(
         {
             await notifier.AgentConnectedAsync(organizationId,
                 new AgentEventPayload(server.Id, server.Name, DateTime.UtcNow), cancellationToken);
+
+            await alertEvaluator.EvaluateHealthAsync(organizationId, AlertMetric.AgentHeartbeat,
+                isHealthy: true, "server", server.Id, server.Name, cancellationToken: cancellationToken);
         }
 
         return new AgentHeartbeatResponse(server.Id, options.AgentRecommendedIntervalSeconds);
@@ -416,6 +419,8 @@ public sealed class AgentIngestService(
         var server = await db.Servers.FirstOrDefaultAsync(
                 s => s.Id == request.ServerId && s.OrganizationId == organizationId, cancellationToken)
             ?? throw new NotFoundException("Server not found for this API key.");
+
+        var wasOffline = server.Status != Domain.Servers.ServerStatus.Online;
 
         Domain.Servers.ServerMetric? latest = null;
         foreach (var sample in request.Metrics.Take(100))
@@ -448,6 +453,17 @@ public sealed class AgentIngestService(
 
         await notifier.MetricsUpdatedAsync(organizationId,
             new MetricsUpdatedPayload("server", server.Id, DateTime.UtcNow), cancellationToken);
+
+        // An agent that was marked offline and resumes posting metrics is back online
+        // (after the first heartbeat the agent only sends metrics).
+        if (latest is not null && wasOffline)
+        {
+            await notifier.AgentConnectedAsync(organizationId,
+                new AgentEventPayload(server.Id, server.Name, DateTime.UtcNow), cancellationToken);
+
+            await alertEvaluator.EvaluateHealthAsync(organizationId, AlertMetric.AgentHeartbeat,
+                isHealthy: true, "server", server.Id, server.Name, cancellationToken: cancellationToken);
+        }
 
         if (latest is not null)
         {

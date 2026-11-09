@@ -4,6 +4,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OpsPulse.API.Extensions;
 using OpsPulse.API.Middleware;
@@ -13,6 +14,7 @@ using OpsPulse.Application.Common;
 using OpsPulse.Domain.Common;
 using OpsPulse.Infrastructure;
 using OpsPulse.Infrastructure.Identity;
+using OpsPulse.Infrastructure.Persistence;
 using OpsPulse.Infrastructure.RealTime;
 using OpsPulse.Infrastructure.Seed;
 using OpsPulse.Infrastructure.Security;
@@ -163,14 +165,24 @@ builder.Services.AddCors(options => options.AddPolicy(FrontendCorsPolicy, policy
 
 var app = builder.Build();
 
-// Idempotent seed: roles + configured SuperAdmin.
+// Optional schema migration (enabled for container deployments, where no one runs
+// `dotnet ef database update`), then idempotent seed: roles + configured SuperAdmin.
 using (var seedScope = app.Services.CreateScope())
 {
+    if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+    {
+        app.Logger.LogInformation("Database:MigrateOnStartup is enabled — applying pending migrations");
+        await seedScope.ServiceProvider.GetRequiredService<OpsPulseDbContext>().Database.MigrateAsync();
+    }
+
     await DbSeeder.SeedAsync(seedScope.ServiceProvider);
 }
 
 app.UseExceptionHandler();
 app.UseSerilogRequestLogging();
+app.UseRouting();
+// HTTP request count/duration histograms per endpoint, exposed on /metrics.
+app.UseHttpMetrics();
 app.UseCors(FrontendCorsPolicy);
 app.UseRateLimiter();
 app.UseAuthentication();
