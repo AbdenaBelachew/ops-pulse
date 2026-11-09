@@ -159,9 +159,7 @@ public sealed class DatabaseCheckScheduler(
             {
                 using var scope = scopeFactory.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<OpsPulseDbContext>();
-                var engine = scope.ServiceProvider.GetRequiredService<DatabaseCheckEngine>();
-                var evaluator = scope.ServiceProvider.GetRequiredService<IAlertEvaluator>();
-                var notifier = scope.ServiceProvider.GetRequiredService<IRealTimeNotifier>();
+                var processor = scope.ServiceProvider.GetRequiredService<DatabaseCheckProcessor>();
 
                 var connections = await db.DatabaseConnections
                     .Where(c => c.IsActive)
@@ -169,43 +167,7 @@ public sealed class DatabaseCheckScheduler(
 
                 foreach (var connection in connections)
                 {
-                    var result = await engine.CheckAsync(connection, stoppingToken);
-                    var now = DateTime.UtcNow;
-
-                    db.DatabaseMetrics.Add(new Domain.Databases.DatabaseMetric
-                    {
-                        DatabaseConnectionId = connection.Id,
-                        CollectedAtUtc = now,
-                        IsReachable = result.IsReachable,
-                        ActiveConnections = result.ActiveConnections,
-                        MaxConnections = result.MaxConnections,
-                        DatabaseSizeMb = result.SizeMb,
-                        ResponseTimeMs = result.ResponseTimeMs,
-                        ErrorMessage = result.ErrorMessage
-                    });
-
-                    var previous = connection.Health;
-                    connection.Health = !result.IsReachable
-                        ? Domain.Databases.DatabaseHealth.Unreachable
-                        : result.ResponseTimeMs > 2000
-                            ? Domain.Databases.DatabaseHealth.Degraded
-                            : Domain.Databases.DatabaseHealth.Healthy;
-                    connection.LastCheckedAtUtc = now;
-
-                    await db.SaveChangesAsync(stoppingToken);
-
-                    if (previous != connection.Health)
-                    {
-                        await notifier.MetricsUpdatedAsync(connection.OrganizationId,
-                            new MetricsUpdatedPayload("database", connection.Id, now), stoppingToken);
-                    }
-
-                    if (result.IsReachable && result.ActiveConnections is { } active && result.MaxConnections is { } max && max > 0)
-                    {
-                        await evaluator.EvaluateMetricAsync(connection.OrganizationId,
-                            AlertMetric.DatabaseConnectionUtilization,
-                            active * 100.0 / max, "database", connection.Id, connection.Name, stoppingToken);
-                    }
+                    await processor.ProcessAsync(connection, stoppingToken);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)

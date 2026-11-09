@@ -424,7 +424,29 @@ more than 2000 ms, otherwise **Healthy**.
 > defaults to `0` (= unlimited). In that case utilization can't be computed and
 > `DatabaseConnectionUtilization` rules don't evaluate for that server.
 
+### Managing a registered database
+
+| Action | Where | Who | What happens |
+|---|---|---|---|
+| **Check now / test connection** | activity icon on the card, or *Check now* on the details page | Operator+ | Probes immediately, records the sample, toast shows latency, connections and size or the exact error |
+| **View history** | click the database name → `/databases/{id}` | everyone | Charts for active vs. max connections, probe latency and size over the last 100 probes (~100 min); availability %, peak connections, size growth, recent failures |
+| **Edit** | pencil icon / *Edit* | DevOpsEngineer+ | Change name, host, port, database, user. Leave **New password** empty to keep the stored one, or type a new one to rotate it. Saving runs a connection test straight away. The type (PostgreSQL / SQL Server) can't change; register a new connection instead. |
+| **Pause / Resume** | pause icon / *Pause* | DevOpsEngineer+ | Paused databases aren't probed and raise no alerts; history is kept. Use it for maintenance windows. |
+| **Remove** | trash icon / *Remove* | DevOpsEngineer+ | Deletes the connection, its encrypted credentials and its metric history |
+
+The cards also show the latest **connections (active / max)**, **utilization %**
+(amber at ≥ 80 %), **size** and **latency**, plus a summary row of healthy, degraded,
+unreachable and paused databases. Every edit is recorded in the Audit Log.
+
+**Alert ideas for databases:** *DB connection utilization (%) > 80*, sustained 5 min →
+pool exhaustion early warning. *Unreachable* databases are visible on the card and in
+the details page's failure list.
+
 ✅ **Verify**
+- [ ] Click *Check now* → toast with latency, connections and size
+- [ ] Edit → change the password to a wrong one → *Save & test* reports the login error;
+      set it back → Healthy again
+- [ ] Pause → card greys out and *Last check* stops advancing; Resume → checks continue
 - [ ] Register the platform's own database (`localhost:5544`, db `opspulse`, user
       `opspulse`, password `opspulse_dev`) → card turns **Healthy** with real numbers
 - [ ] Register a wrong password → **Unreachable** with the error message
@@ -762,7 +784,8 @@ per-field messages. In Development the interactive reference is at **`/scalar`**
 | GET | `/servers`, `/servers/{id}` | authenticated |
 | PUT · DELETE | `/servers/{id}` | CanManageMonitoring |
 | GET | `/databases`, `/databases/{id}` | authenticated |
-| POST · PUT · DELETE | `/databases`, `/databases/{id}` | CanManageMonitoring |
+| POST · PUT · DELETE | `/databases`, `/databases/{id}` (PUT: omit `password` to keep it; `isActive` pauses/resumes) | CanManageMonitoring |
+| POST | `/databases/{id}/check` (probe now, returns the sample) | CanOperateMonitoring |
 | GET | `/docker`, `/docker/{id}` | authenticated |
 | POST · DELETE | `/docker`, `/docker/{id}`; POST `/docker/{id}/sync` | CanManageMonitoring |
 | GET | `/kubernetes`, `/kubernetes/{id}` | authenticated |

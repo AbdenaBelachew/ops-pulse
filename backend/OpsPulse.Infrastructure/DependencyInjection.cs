@@ -87,6 +87,7 @@ public static class DependencyInjection
         services.AddScoped<SafeHttpCheckEngine>();
         services.AddScoped<ServiceCheckProcessor>();
         services.AddScoped<DatabaseCheckEngine>();
+        services.AddScoped<DatabaseCheckProcessor>();
         services.AddScoped<KubernetesSyncEngine>();
         services.AddScoped<DockerSyncEngine>();
 

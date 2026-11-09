@@ -132,4 +132,11 @@ public sealed class DatabasesController(IDatabaseService databaseService) : Cont
         await databaseService.DeleteAsync(id, cancellationToken);
         return NoContent();
     }
+
+    /// <summary>Probes the database now (connection test) and records the sample.</summary>
+    [HttpPost("{id:guid}/check")]
+    [Authorize(Policy = Policies.CanOperateMonitoring)]
+    [ProducesResponseType(typeof(DatabaseMetricDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<DatabaseMetricDto>> CheckNow(Guid id, CancellationToken cancellationToken)
+        => Ok(await databaseService.CheckNowAsync(id, cancellationToken));
 }

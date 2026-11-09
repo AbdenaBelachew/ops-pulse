@@ -12,6 +12,7 @@ import { ApplicationDetailsPage } from './pages/monitoring/ApplicationDetailsPag
 import { ServersPage } from './pages/monitoring/ServersPage'
 import { ServerDetailsPage } from './pages/monitoring/ServerDetailsPage'
 import { DatabasesPage } from './pages/monitoring/DatabasesPage'
+import { DatabaseDetailsPage } from './pages/monitoring/DatabaseDetailsPage'
 import { KubernetesPage } from './pages/monitoring/KubernetesPage'
 import { DockerPage } from './pages/monitoring/DockerPage'
 import { AgentsPage } from './pages/monitoring/AgentsPage'
@@ -36,6 +37,7 @@ function App() {
           <Route path="/servers" element={<ServersPage />} />
           <Route path="/servers/:id" element={<ServerDetailsPage />} />
           <Route path="/databases" element={<DatabasesPage />} />
+          <Route path="/databases/:id" element={<DatabaseDetailsPage />} />
           <Route path="/kubernetes" element={<KubernetesPage />} />
           <Route path="/docker" element={<DockerPage />} />
           <Route path="/agents" element={<AgentsPage />} />

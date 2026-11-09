@@ -38,6 +38,9 @@ public interface IDatabaseService
     Task<DatabaseConnectionDto> CreateAsync(CreateDatabaseConnectionRequest request, CancellationToken cancellationToken = default);
     Task<DatabaseConnectionDto> UpdateAsync(Guid id, UpdateDatabaseConnectionRequest request, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Probes the database immediately and records the sample (also a connection test).</summary>
+    Task<DatabaseMetricDto> CheckNowAsync(Guid id, CancellationToken cancellationToken = default);
 }
 
 public interface IKubernetesService

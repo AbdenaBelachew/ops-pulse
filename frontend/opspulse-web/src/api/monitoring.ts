@@ -190,6 +190,28 @@ export async function deleteDatabase(id: string): Promise<void> {
   await apiClient.delete(`/databases/${id}`)
 }
 
+export interface DatabaseUpdateInput {
+  name?: string
+  host?: string
+  port?: number
+  databaseName?: string
+  username?: string
+  /** Omit to keep the stored (encrypted) password. */
+  password?: string
+  isActive?: boolean
+}
+
+export async function updateDatabase(id: string, input: DatabaseUpdateInput): Promise<DatabaseConnectionDto> {
+  const { data } = await apiClient.put<DatabaseConnectionDto>(`/databases/${id}`, input)
+  return data
+}
+
+/** Probes the database immediately (connection test) and records the sample. */
+export async function checkDatabase(id: string): Promise<DatabaseMetricDto> {
+  const { data } = await apiClient.post<DatabaseMetricDto>(`/databases/${id}/check`)
+  return data
+}
+
 // ---- Kubernetes ----
 export interface KubernetesClusterDto {
   id: string

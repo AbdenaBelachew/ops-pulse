@@ -108,8 +108,17 @@ public sealed class DatabaseService(
     IValidator<CreateDatabaseConnectionRequest> createValidator,
     IValidator<UpdateDatabaseConnectionRequest> updateValidator,
     ICredentialProtector protector,
-    IAuditLogger auditLogger) : IDatabaseService
+    IAuditLogger auditLogger,
+    Monitoring.DatabaseCheckProcessor checkProcessor) : IDatabaseService
 {
+    public async Task<DatabaseMetricDto> CheckNowAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var connection = await Scoped().FirstOrDefaultAsync(d => d.Id == id, cancellationToken)
+            ?? throw new NotFoundException("Database connection not found.");
+
+        return await checkProcessor.ProcessAsync(connection, cancellationToken);
+    }
+
     public async Task<PagedResult<DatabaseConnectionDto>> ListAsync(DatabaseListQuery query, CancellationToken cancellationToken = default)
     {
         var page = Math.Max(1, query.Page);
